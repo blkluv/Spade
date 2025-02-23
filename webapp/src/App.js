@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
+import CamDiv from "./CamDiv";
 import "./App.css";
 
 function App() {
@@ -7,6 +8,7 @@ function App() {
   const [cameraEnabled, setCameraEnabled] = useState(false); // State to toggle camera
   const [showRaiseInput, setShowRaiseInput] = useState(false); // Raise Input State
   const [raiseAmount, setRaiseAmount] = useState(""); // Raise Amount
+  const [cardsScanned, setCardsScanned] = useState(false);
 
   // API-Anfrage, um Spieleraktionen zu senden
   const sendAction = async (action) => {
@@ -51,32 +53,28 @@ function App() {
   return (
     <div className="app">
       <h1>♠️ SPADE ♠️</h1>
-      <div className="camera-container">
-        {cameraEnabled ? (
-          <Webcam
-            ref={webcamRef}
-            audio={false}
-            screenshotFormat="image/jpeg"
-            width={300}
-            height={300}
-            videoConstraints={{
-              width: 300,
-              height: 300,
-              facingMode: "user", // Use the front-facing camera
-            }}
-          />
+      <div>
+        {cardsScanned ? (
+            <div className="cards">Cards scanned</div>
         ) : (
-          <div className="camera-placeholder">Camera is off</div>
+            <CamDiv
+                cameraEnabled={cameraEnabled}
+                webcamRef={webcamRef}
+                onCapture={(t) => {
+                  setCardsScanned(true);
+                  console.log("CARDS SCANNED!!!!")
+                }}
+            />
         )}
       </div>
 
       {/* Raise Input */}
       {showRaiseInput && (
-        <div className="raise-input">
-          <input
-            type="number"
-            placeholder="Enter raise amount"
-            value={raiseAmount}
+          <div className="raise-input">
+            <input
+                type="number"
+                placeholder="Enter raise amount"
+                value={raiseAmount}
             onChange={handleInputChange}
           />
           <button onClick={handleConfirmRaise}>OK</button>
@@ -96,7 +94,7 @@ function App() {
         className="toggle-camera"
         onClick={() => setCameraEnabled(!cameraEnabled)}
       >
-        {cameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
+        {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
       </button>
     </div>
   );
