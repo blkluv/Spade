@@ -5,11 +5,11 @@ function CamDiv({ cameraEnabled, webcamRef, onCapture }) {
     useEffect(() => {
         if (cameraEnabled && webcamRef.current) {
             const captureImage = () => {
-                console.log("captureImage");
-                const screenshot = webcamRef.current.getScreenshot();
-                if (screenshot && onCapture) {
-                    onCapture(screenshot); // Send the screenshot to the server
-                }
+              console.log("captureImage");
+              const video = webcamRef.current.video; // Access the video element
+              if (video && onCapture) {
+                onCapture(video); // Pass the video element
+              }
             };
 
             // Capture an image every 5 seconds (example)
@@ -21,7 +21,7 @@ function CamDiv({ cameraEnabled, webcamRef, onCapture }) {
 
     return (
         <div>
-            {cameraEnabled ? (<div>scanning<div style={{ display: "none" }}>
+            {cameraEnabled ? (<div>scanning...<div style={{ display: "none" }}>
                 {cameraEnabled && (
                     <Webcam
                         ref={webcamRef}
