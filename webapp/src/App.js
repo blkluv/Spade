@@ -1,12 +1,22 @@
 import React, { useRef, useState } from "react";
 import Webcam from "react-webcam";
+import CamDiv from "./CamDiv";
 import "./App.css";
+import { io } from "socket.io-client";
+
+const socket = io('https://localhost:5000', {  // Fixed URL
+  transports: ['websocket'],
+  secure: true,
+  rejectUnauthorized: false // Needed for self-signed certs in dev
+});
 
 function App() {
   const webcamRef = useRef(null); // Reference to the webcam component
   const [cameraEnabled, setCameraEnabled] = useState(false); // State to toggle camera
   const [showRaiseInput, setShowRaiseInput] = useState(false); // Raise Input State
   const [raiseAmount, setRaiseAmount] = useState(""); // Raise Amount
+  const [cardsScanned, setCardsScanned] = useState(false);
+  const [cards, setCards] = useState([])
 
   // API-Anfrage, um Spieleraktionen zu senden
   const sendAction = async (action) => {
@@ -48,35 +58,80 @@ function App() {
     setRaiseAmount(event.target.value);
   };
 
+
+  const handleCapture = async (frame) => {
+    if (!frame || !frame.videoWidth || !frame.videoHeight) {
+      console.error('Invalid video frame');
+      return;
+    }
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = frame.videoWidth;
+      canvas.height = frame.videoHeight;
+      const ctx = canvas.getContext('2d');
+
+      // Draw the video frame onto the canvas
+      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+
+      // Convert canvas to Blob
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Canvas is empty or invalid'));
+            }
+          },
+          'image/jpeg',
+          0.8 // JPEG quality (0.8 = 80%)
+        );
+      });
+
+      // Convert Blob to ArrayBuffer
+      const arrayBuffer = await blob.arrayBuffer();
+
+      // Send via Socket.IO
+      const response = await new Promise((resolve) => {
+        socket.emit('frame', {
+          n: 2,
+          image: arrayBuffer
+        }, resolve);
+      });
+
+      if (response?.found) {
+        setCardsScanned(true);
+        setCards(response.predictions);
+      }
+    } catch (error) {
+      console.error('Capture error:', error);
+    }
+  };
+
+
   return (
     <div className="app">
       <h1>♠️ SPADE ♠️</h1>
-      <div className="camera-container">
-        {cameraEnabled ? (
-          <Webcam
-            ref={webcamRef}
-            audio={false}
-            screenshotFormat="image/jpeg"
-            width={300}
-            height={300}
-            videoConstraints={{
-              width: 300,
-              height: 300,
-              facingMode: "user", // Use the front-facing camera
-            }}
-          />
+      <div>
+        {cardsScanned ? (
+            <div className="cards">Cards: {cards}</div>
         ) : (
-          <div className="camera-placeholder">Camera is off</div>
+            <CamDiv
+                cameraEnabled={cameraEnabled}
+                webcamRef={webcamRef}
+                onCapture={handleCapture}
+            />
         )}
       </div>
 
       {/* Raise Input */}
       {showRaiseInput && (
-        <div className="raise-input">
-          <input
-            type="number"
-            placeholder="Enter raise amount"
-            value={raiseAmount}
+          <div className="raise-input">
+            <input
+                type="number"
+                placeholder="Enter raise amount"
+                value={raiseAmount}
             onChange={handleInputChange}
           />
           <button onClick={handleConfirmRaise}>OK</button>
@@ -96,7 +151,7 @@ function App() {
         className="toggle-camera"
         onClick={() => setCameraEnabled(!cameraEnabled)}
       >
-        {cameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
+        {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
       </button>
     </div>
   );
