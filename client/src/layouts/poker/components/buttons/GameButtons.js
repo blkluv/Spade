@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import VuiButton from "../../../../components/VuiButton";
 
 //const serverAddress = process.env.PUBLIC_URL;
-const serverAddress = "https://localhost:5000";
+const serverAddress = "https://spade.casinow3w.com";
 console.log("Server Address:", serverAddress);
 
 function GameButtons() {
