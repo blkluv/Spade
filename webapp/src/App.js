@@ -4,7 +4,7 @@ import CamDiv from "./CamDiv";
 import "./App.css";
 import { io } from "socket.io-client";
 
-const socket = io('https://localhost:5000', {  // Fixed URL
+const socket = io('https://127.0.0.1:5000', {  // Fixed URL
   transports: ['websocket'],
   secure: true,
   rejectUnauthorized: false // Needed for self-signed certs in dev
@@ -65,6 +65,8 @@ function App() {
       return;
     }
 
+    console.log("Valid video frame detected!")
+
     try {
       const canvas = document.createElement('canvas');
       canvas.width = frame.videoWidth;
@@ -98,6 +100,7 @@ function App() {
           n: 2,
           image: arrayBuffer
         }, resolve);
+        console.log("Waiting for response.")
       });
 
       if (response?.found) {

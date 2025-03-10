@@ -39,7 +39,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 app.secret_key = 'a_random_secret_key_12345'  # Required for session handling (optional)
 
-MODEL_PATH = '../webapp/models/best_60_23.pt'
+MODEL_PATH = '../server/assets/models/best_60_23.pt'
 
 CLIENT_ID = "258c86af6a9e45ac8fac5185cceff480"
 CLIENT_SECRET = "e5c969b18de0458a95552515897cd7fc"
@@ -76,6 +76,11 @@ def process_frame(image_data, n):
     nparr = np.frombuffer(image_data, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+    return {
+        'predictions': ["QS", "JS"],
+        'found': True
+    }
+
     # Run inference
     print("Running inference")
     results = model(img)
@@ -103,6 +108,7 @@ def process_frame(image_data, n):
 
 @socketio.on('frame')
 def handle_frame(data):
+    print("Received a frame!!!")
     n = data['n']
     image_data = data['image']
     response = process_frame(image_data, n)

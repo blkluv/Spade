@@ -13,7 +13,7 @@ function CamDiv({ cameraEnabled, webcamRef, onCapture }) {
             };
 
             // Capture an image every 5 seconds (example)
-            const interval = setInterval(captureImage, 2);
+            const interval = setInterval(captureImage, 2000);
 
             return () => clearInterval(interval); // Clean up on unmount
         }
