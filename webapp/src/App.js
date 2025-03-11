@@ -1,161 +1,118 @@
-import React, { useRef, useState } from "react";
-import Webcam from "react-webcam";
+import React, { useState, useRef, useEffect } from "react";
+import { FaMoon, FaSun, FaHome, FaUser } from "react-icons/fa";
+import { GiPokerHand } from "react-icons/gi";
 import CamDiv from "./CamDiv";
-import "./App.css";
+import HomePage from "./HomePage";
+import ProfilePage from "./ProfilePage";
 import { io } from "socket.io-client";
+import "./styles.css";
 
-const socket = io('https://127.0.0.1:5000', {  // Fixed URL
-  transports: ['websocket'],
+const socket = io("http://127.0.0.1:5001", {
+  transports: ["websocket"],
   secure: true,
-  rejectUnauthorized: false // Needed for self-signed certs in dev
+  rejectUnauthorized: false,
 });
 
 function App() {
-  const webcamRef = useRef(null); // Reference to the webcam component
-  const [cameraEnabled, setCameraEnabled] = useState(false); // State to toggle camera
-  const [showRaiseInput, setShowRaiseInput] = useState(false); // Raise Input State
-  const [raiseAmount, setRaiseAmount] = useState(""); // Raise Amount
-  const [cardsScanned, setCardsScanned] = useState(false);
-  const [cards, setCards] = useState([])
+  const [darkMode, setDarkMode] = useState(true);
+  const [currentPage, setCurrentPage] = useState("home");
+  const [user, setUser] = useState(null);
 
-  // API-Anfrage, um Spieleraktionen zu senden
-  const sendAction = async (action) => {
-    console.log(`Action sent: ${action}`);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate delay
-    console.log(`Action "${action}" processed.`);
-  };
+  useEffect(() => {
+    // Apply theme class to body
+    document.body.className = darkMode ? "dark-theme" : "light-theme";
 
-  // Button-Click-Handler
-  const handleRaiseClick = () => {
-    setShowRaiseInput((prev) => !prev);
-  };
-
-  const handleConfirmRaise = () => {
-    if (raiseAmount) {
-      sendAction(`raise ${raiseAmount}`);
-      setShowRaiseInput(false); // Input verstecken
-      setRaiseAmount(""); // Reset input field
-    } else {
-      alert("Please enter a valid raise amount.");
-    }
-  };
-
-  const handleCheckClick = () => {
-    sendAction("check");
-  };
-
-  const handleFoldClick = () => {
-    sendAction("fold");
-  };
-
-  const handleCallClick = () => {
-    sendAction("call");
-  };
-
-  // Input-Änderungen verarbeiten
-  const handleInputChange = (event) => {
-    setRaiseAmount(event.target.value);
-  };
-
-
-  const handleCapture = async (frame) => {
-    if (!frame || !frame.videoWidth || !frame.videoHeight) {
-      console.error('Invalid video frame');
-      return;
-    }
-
-    console.log("Valid video frame detected!")
-
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = frame.videoWidth;
-      canvas.height = frame.videoHeight;
-      const ctx = canvas.getContext('2d');
-
-      // Draw the video frame onto the canvas
-      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-
-      // Convert canvas to Blob
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Canvas is empty or invalid'));
-            }
-          },
-          'image/jpeg',
-          0.8 // JPEG quality (0.8 = 80%)
-        );
-      });
-
-      // Convert Blob to ArrayBuffer
-      const arrayBuffer = await blob.arrayBuffer();
-
-      // Send via Socket.IO
-      const response = await new Promise((resolve) => {
-        socket.emit('frame', {
-          n: 2,
-          image: arrayBuffer
-        }, resolve);
-        console.log("Waiting for response.")
-      });
-
-      if (response?.found) {
-        setCardsScanned(true);
-        setCards(response.predictions);
+    // Check if user is logged in from local storage
+    const savedUser = localStorage.getItem("pokerUser");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem("pokerUser");
       }
-    } catch (error) {
-      console.error('Capture error:', error);
     }
+  }, [darkMode]);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem("pokerUser", JSON.stringify(userData));
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("pokerUser");
+  };
+
+  const navigateTo = (page) => {
+    setCurrentPage(page);
+  };
 
   return (
-    <div className="app">
-      <h1>♠️ SPADE ♠️</h1>
-      <div>
-        {cardsScanned ? (
-            <div className="cards">Cards: {cards}</div>
-        ) : (
-            <CamDiv
-                cameraEnabled={cameraEnabled}
-                webcamRef={webcamRef}
-                onCapture={handleCapture}
-            />
-        )}
-      </div>
-
-      {/* Raise Input */}
-      {showRaiseInput && (
-          <div className="raise-input">
-            <input
-                type="number"
-                placeholder="Enter raise amount"
-                value={raiseAmount}
-            onChange={handleInputChange}
-          />
-          <button onClick={handleConfirmRaise}>OK</button>
+    <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
+      <header className="app-header">
+        <div className="logo" onClick={() => navigateTo("home")}>
+          <GiPokerHand className="logo-icon" />
+          <h1>SPADE</h1>
         </div>
-      )}
 
-      {/* Buttons */}
-      <div className="buttons">
-        <button onClick={handleRaiseClick}>Raise</button>
-        <button onClick={handleCallClick}>Call</button>
-        <button onClick={handleCheckClick}>Check</button>
-        <button onClick={handleFoldClick}>Fold</button>
-      </div>
+        <div className="header-controls">
+          <button
+            className={`nav-button ${currentPage === "home" ? "active" : ""}`}
+            onClick={() => navigateTo("home")}
+            aria-label="Home"
+          >
+            <FaHome className="nav-icon" />
+          </button>
 
-      {/* Toggle Camera Button */}
-      <button
-        className="toggle-camera"
-        onClick={() => setCameraEnabled(!cameraEnabled)}
-      >
-        {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
-      </button>
+          <button
+            className={`nav-button ${
+              currentPage === "profile" ? "active" : ""
+            }`}
+            onClick={() => navigateTo("profile")}
+            aria-label="Profile"
+          >
+            {user ? (
+              <div
+                className={`mini-avatar ${
+                  user.customAvatar ? "custom" : `avatar-${user.avatar}`
+                }`}
+                style={
+                  user.customAvatar
+                    ? { backgroundImage: `url(${user.customAvatar})` }
+                    : {}
+                }
+              >
+                {!user.customAvatar && user.username.charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              <FaUser className="nav-icon" />
+            )}
+          </button>
+
+          <button
+            className="theme-toggle"
+            onClick={() => setDarkMode(!darkMode)}
+            aria-label="Toggle theme"
+          >
+            {darkMode ? <FaSun /> : <FaMoon />}
+          </button>
+        </div>
+      </header>
+
+      <main>
+        {currentPage === "home" && (
+          <HomePage socket={socket} darkMode={darkMode} />
+        )}
+
+        {currentPage === "profile" && (
+          <ProfilePage
+            user={user}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            navigateToHome={() => navigateTo("home")}
+          />
+        )}
+      </main>
     </div>
   );
 }
