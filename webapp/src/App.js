@@ -72,8 +72,17 @@ function App() {
             aria-label="Profile"
           >
             {user ? (
-              <div className={`mini-avatar avatar-${user.avatar}`}>
-                {user.username.charAt(0).toUpperCase()}
+              <div
+                className={`mini-avatar ${
+                  user.customAvatar ? "custom" : `avatar-${user.avatar}`
+                }`}
+                style={
+                  user.customAvatar
+                    ? { backgroundImage: `url(${user.customAvatar})` }
+                    : {}
+                }
+              >
+                {!user.customAvatar && user.username.charAt(0).toUpperCase()}
               </div>
             ) : (
               <FaUser className="nav-icon" />

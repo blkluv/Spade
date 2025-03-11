@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { FaCamera } from "react-icons/fa";
 
 function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
   const [username, setUsername] = useState(user?.username || "");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState(user?.email || "");
   const [avatar, setAvatar] = useState(user?.avatar || "default");
+  const [customAvatar, setCustomAvatar] = useState(user?.customAvatar || null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const fileInputRef = useRef(null);
 
   const availableAvatars = [
     "default",
@@ -24,12 +27,13 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
       return;
     }
 
-    // Simulate a login - in a real app, this would make an API call
+    // Simulate a login
     setError("");
     onLogin({
       username,
       email: `${username.toLowerCase()}@example.com`,
       avatar: "default",
+      customAvatar: null,
       chips: 1000,
       gamesPlayed: 0,
       wins: 0,
@@ -54,12 +58,65 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
       username,
       email,
       avatar,
+      customAvatar,
     };
 
     onLogin(updatedUser);
     setIsEditing(false);
     setSuccessMessage("Profile updated successfully!");
     setTimeout(() => setSuccessMessage(""), 2000);
+  };
+
+  // Handle image upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check if the file is an image
+    if (!file.type.match("image.*")) {
+      setError("Please select an image file");
+      return;
+    }
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image size should be less than 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCustomAvatar(e.target.result);
+
+      // If in edit mode, don't save yet
+      if (!isEditing) {
+        const updatedUser = {
+          ...user,
+          customAvatar: e.target.result,
+        };
+        onLogin(updatedUser);
+        setSuccessMessage("Profile picture updated!");
+        setTimeout(() => setSuccessMessage(""), 2000);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current.click();
+  };
+
+  const removeCustomAvatar = () => {
+    setCustomAvatar(null);
+    if (!isEditing) {
+      const updatedUser = {
+        ...user,
+        customAvatar: null,
+      };
+      onLogin(updatedUser);
+      setSuccessMessage("Profile picture removed!");
+      setTimeout(() => setSuccessMessage(""), 2000);
+    }
   };
 
   if (!user) {
@@ -125,8 +182,30 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
         )}
 
         <div className="profile-header">
-          <div className={`avatar avatar-${user.avatar}`}>
-            {user.username.charAt(0).toUpperCase()}
+          <div className="avatar-container">
+            <div
+              className={`avatar ${
+                customAvatar ? "custom" : `avatar-${avatar}`
+              }`}
+              style={
+                customAvatar ? { backgroundImage: `url(${customAvatar})` } : {}
+              }
+            >
+              {!customAvatar && user.username.charAt(0).toUpperCase()}
+
+              <div className="avatar-overlay" onClick={triggerFileInput}>
+                <FaCamera className="camera-icon" />
+                <span>Change</span>
+              </div>
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="file-input"
+            />
           </div>
 
           {!isEditing ? (
@@ -159,22 +238,40 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
               />
             </div>
 
-            <div className="form-group">
-              <label>Select Avatar</label>
-              <div className="avatar-selector">
-                {availableAvatars.map((avatarOption) => (
-                  <div
-                    key={avatarOption}
-                    className={`avatar avatar-${avatarOption} ${
-                      avatar === avatarOption ? "selected" : ""
-                    }`}
-                    onClick={() => setAvatar(avatarOption)}
-                  >
-                    {username.charAt(0).toUpperCase()}
-                  </div>
-                ))}
+            {!customAvatar && (
+              <div className="form-group">
+                <label>Select Avatar</label>
+                <div className="avatar-selector">
+                  {availableAvatars.map((avatarOption) => (
+                    <div
+                      key={avatarOption}
+                      className={`avatar avatar-${avatarOption} ${
+                        avatar === avatarOption ? "selected" : ""
+                      }`}
+                      onClick={() => setAvatar(avatarOption)}
+                    >
+                      {username.charAt(0).toUpperCase()}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {customAvatar && (
+              <div className="form-group">
+                <label>Profile Picture</label>
+                <div className="custom-avatar-preview">
+                  <img src={customAvatar} alt="Custom avatar" />
+                  <button
+                    type="button"
+                    className="remove-avatar-btn"
+                    onClick={removeCustomAvatar}
+                  >
+                    Remove and use default
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="form-buttons">
               <button type="submit" className="primary-button">
