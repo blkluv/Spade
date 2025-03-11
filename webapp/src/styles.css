@@ -273,6 +273,82 @@ body {
 }
 
 /* Scan button */
+
+
+/* Card verification styles */
+.card-verification {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.verification-text {
+  font-size: 1.1rem;
+  color: var(--warning-color);
+  font-weight: 500;
+}
+
+.verification-buttons {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.confirm-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to bottom right, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.retry-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to bottom right, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirm-button:hover,
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.confirm-button:active,
+.retry-button:active {
+  transform: translateY(0);
+}
+
+.poker-cards.clickable {
+  cursor: pointer;
+}
+
+.poker-cards:not(.clickable) {
+  cursor: default;
+}
+
+/* Only show hover effect when cards are confirmed but not yet revealed */
+.poker-cards:not(.clickable) .poker-card:hover {
+  transform: none;
+}
+
+
 .scan-button {
   background: var(--primary-gradient);
   color: white;
@@ -422,7 +498,7 @@ body {
 }
 
 .action-button.call {
-  background: linear-gradient(to bottom right, #10b981, #059669);
+  background: linear-gradient(to bottom right, #10b981, #048c61);
 }
 
 .action-button.check {
@@ -919,77 +995,4 @@ body {
   .profile-actions {
     flex-direction: column;
   }
-}
-
-/* Card verification styles */
-.card-verification {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  animation: fadeIn 0.3s ease;
-}
-
-.verification-text {
-  font-size: 1.1rem;
-  color: var(--warning-color);
-  font-weight: 500;
-}
-
-.verification-buttons {
-  display: flex;
-  gap: 1rem;
-  width: 100%;
-  max-width: 400px;
-}
-
-.confirm-button {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(to bottom right, #10b981, #059669);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.retry-button {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(to bottom right, #f59e0b, #d97706);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.confirm-button:hover,
-.retry-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.confirm-button:active,
-.retry-button:active {
-  transform: translateY(0);
-}
-
-.poker-cards.clickable {
-  cursor: pointer;
-}
-
-.poker-cards:not(.clickable) {
-  cursor: default;
-}
-
-/* Only show hover effect when cards are confirmed but not yet revealed */
-.poker-cards:not(.clickable) .poker-card:hover {
-  transform: none;
 }
