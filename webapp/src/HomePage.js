@@ -2,32 +2,40 @@ import React, { useRef, useState } from "react";
 import CamDiv from "./CamDiv";
 
 function HomePage({ socket, darkMode }) {
+  // States for camera and scanning
   const webcamRef = useRef(null);
   const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [actionStatus, setActionStatus] = useState("");
+
+  // States for card scanning process
+  const [cardsScanned, setCardsScanned] = useState(false);
+  const [cardsRevealed, setCardsRevealed] = useState(false);
+  const [cardsConfirmed, setCardsConfirmed] = useState(false);
+  const [cards, setCards] = useState([]);
+
+  // States for poker actions
   const [showRaiseInput, setShowRaiseInput] = useState(false);
   const [raiseAmount, setRaiseAmount] = useState("");
-  const [cardsScanned, setCardsScanned] = useState(false);
-  const [cardsConfirmed, setCardsConfirmed] = useState(false); // New state for confirmation
-  const [cards, setCards] = useState([]);
-  const [cardsRevealed, setCardsRevealed] = useState(false);
-  const [actionStatus, setActionStatus] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
+  // Function to send poker actions
   const sendAction = async (action) => {
-    // Existing function
     setIsLoading(true);
     setActionStatus(`Processing: ${action}...`);
 
     try {
+      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setActionStatus(`Action "${action}" completed.`);
+
+      // Clear status after 2 seconds
       setTimeout(() => setActionStatus(""), 2000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Button handlers (existing)
+  // Button handlers for poker actions
   const handleRaiseClick = () => {
     setShowRaiseInput((prev) => !prev);
   };
@@ -43,6 +51,7 @@ function HomePage({ socket, darkMode }) {
     }
   };
 
+  // Card scanning and verification functions
   const handleCapture = async (frame) => {
     if (!frame || !frame.videoWidth || !frame.videoHeight) {
       console.error("Invalid video frame");
@@ -82,10 +91,10 @@ function HomePage({ socket, darkMode }) {
 
       if (response?.found) {
         setCardsScanned(true);
-        setCardsConfirmed(false); // Reset confirmation when new cards are scanned
-        setCards(response.predictions);
         setCardsRevealed(false);
-        setActionStatus("Please verify your cards are correct.");
+        setCardsConfirmed(false);
+        setCards(response.predictions);
+        setActionStatus("Cards detected! Click to reveal.");
         setTimeout(() => setActionStatus(""), 3000);
       }
     } catch (error) {
@@ -96,16 +105,22 @@ function HomePage({ socket, darkMode }) {
     }
   };
 
-  // New function to confirm cards
+  const revealCards = () => {
+    if (cardsScanned && !cardsRevealed) {
+      setCardsRevealed(true);
+      setActionStatus("Are these your correct cards?");
+    }
+  };
+
   const handleConfirmCards = () => {
     setCardsConfirmed(true);
-    setActionStatus("Cards confirmed! Click to reveal them.");
+    setActionStatus("Cards confirmed!");
     setTimeout(() => setActionStatus(""), 2000);
   };
 
-  // New function to retry scan
   const handleRetryScan = () => {
     setCardsScanned(false);
+    setCardsRevealed(false);
     setCardsConfirmed(false);
     setCards([]);
     setCameraEnabled(true);
@@ -113,21 +128,11 @@ function HomePage({ socket, darkMode }) {
     setTimeout(() => setActionStatus(""), 2000);
   };
 
-  // Reveal cards function (modified)
-  const revealCards = () => {
-    if (cardsConfirmed && !cardsRevealed) {
-      setCardsRevealed(true);
-      setActionStatus("Cards revealed!");
-      setTimeout(() => setActionStatus(""), 1500);
-    }
-  };
-
-  // Reset scan completely
   const resetScan = () => {
     setCardsScanned(false);
+    setCardsRevealed(false);
     setCardsConfirmed(false);
     setCards([]);
-    setCardsRevealed(false);
     setCameraEnabled(false);
   };
 
@@ -136,17 +141,15 @@ function HomePage({ socket, darkMode }) {
 
     return (
       <div
-        className={`poker-cards ${cardsConfirmed ? "clickable" : ""}`}
-        onClick={cardsConfirmed ? revealCards : undefined}
+        className={`poker-cards ${!cardsRevealed ? "clickable" : ""}`}
+        onClick={!cardsRevealed ? revealCards : undefined}
       >
         {cards.map((card, index) => (
           <div
             key={index}
-            className={`poker-card ${
-              !cardsRevealed && cardsConfirmed ? "covered" : ""
-            }`}
+            className={`poker-card ${!cardsRevealed ? "covered" : ""}`}
           >
-            {!cardsRevealed && cardsConfirmed ? (
+            {!cardsRevealed ? (
               <div className="card-back">
                 <span className="reveal-hint">Click to reveal</span>
               </div>
@@ -167,8 +170,8 @@ function HomePage({ socket, darkMode }) {
             <h2>Your Cards</h2>
             {renderCards()}
 
-            {/* Confirmation controls */}
-            {!cardsConfirmed ? (
+            {/* Verification controls - only show after revealing */}
+            {cardsRevealed && !cardsConfirmed ? (
               <div className="card-verification">
                 <p className="verification-text">Are these cards correct?</p>
                 <div className="verification-buttons">
@@ -176,18 +179,18 @@ function HomePage({ socket, darkMode }) {
                     className="confirm-button"
                     onClick={handleConfirmCards}
                   >
-                    Confirm Cards
+                    Yes, Correct
                   </button>
                   <button className="retry-button" onClick={handleRetryScan}>
-                    Retry Scan
+                    No, Retry Scan
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : cardsConfirmed ? (
               <button className="reset-button" onClick={resetScan}>
                 Scan New Cards
               </button>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="scanner-container">
