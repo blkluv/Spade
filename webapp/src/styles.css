@@ -523,7 +523,7 @@ body {
 
 .black-card .card-rank,
 .black-card .card-suit {
-  color: #2c3e50;
+  color: #cccccc;
 }
 
 /* Light theme color adjustments */
@@ -558,6 +558,10 @@ body {
   animation: cardFlipIn 0.8s ease-out forwards;
 }
 
+.poker-card:not(.covered) .card-content {
+  transform: rotateY(180deg)
+}
+
 .poker-card.covered::before {
   content: "";
   position: absolute;
@@ -578,7 +582,7 @@ body {
 }
 
 .poker-card.covered::after {
-  content: "♠️";
+  content: "♠";
   position: absolute;
   top: 50%;
   left: 50%;
