@@ -106,9 +106,16 @@ function HomePage({ socket, darkMode }) {
   };
 
   const revealCards = () => {
-    if (cardsScanned && !cardsRevealed) {
-      setCardsRevealed(true);
-      setActionStatus("Are these your correct cards?");
+    // Toggle between revealed and hidden states when cards are clicked
+    if (cardsScanned) {
+      setCardsRevealed((prevState) => !prevState);
+
+      if (!cardsRevealed) {
+        setActionStatus("Cards revealed!");
+      } else {
+        setActionStatus("Cards hidden!");
+      }
+      setTimeout(() => setActionStatus(""), 1500);
     }
   };
 
@@ -139,10 +146,19 @@ function HomePage({ socket, darkMode }) {
   const renderCards = () => {
     if (!cards.length) return null;
 
+    const hintText = !cardsRevealed ? "Click to reveal" : "Click to hide";
+
     return (
       <div
-        className={`poker-cards ${!cardsRevealed ? "clickable" : ""}`}
-        onClick={!cardsRevealed ? revealCards : undefined}
+        className={`poker-cards clickable`}
+        onClick={
+          cardsConfirmed
+            ? revealCards
+            : !cardsRevealed
+            ? revealCards
+            : undefined
+        }
+        data-action-hint={hintText}
       >
         {cards.map((card, index) => (
           <div
@@ -154,7 +170,10 @@ function HomePage({ socket, darkMode }) {
                 <span className="reveal-hint">Click to reveal</span>
               </div>
             ) : (
-              card
+              <>
+                {card}
+                <span className="hide-hint">Click to hide</span>
+              </>
             )}
           </div>
         ))}
@@ -185,11 +204,17 @@ function HomePage({ socket, darkMode }) {
                     No, Retry Scan
                   </button>
                 </div>
+                <p className="toggle-hint">
+                  You can click the cards to hide them again
+                </p>
               </div>
             ) : cardsConfirmed ? (
-              <button className="reset-button" onClick={resetScan}>
-                Scan New Cards
-              </button>
+              <>
+                <p className="toggle-hint">Click cards to show or hide them</p>
+                <button className="reset-button" onClick={resetScan}>
+                  Scan New Cards
+                </button>
+              </>
             ) : null}
           </div>
         ) : (

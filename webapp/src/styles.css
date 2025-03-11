@@ -1126,3 +1126,70 @@ body {
     flex-direction: column;
   }
 }
+
+/* Card Toggle Functionality */
+.poker-card .hide-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-primary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.poker-card:hover .hide-hint {
+  opacity: 0.7;
+}
+
+.poker-cards.clickable::after {
+  content: attr(data-action-hint);
+  position: absolute;
+  bottom: -25px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.poker-cards.clickable:hover::after {
+  opacity: 1;
+}
+
+.toggle-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  font-style: italic;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Enhanced Card Animation */
+.poker-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+.poker-card.covered,
+.poker-card:not(.covered) {
+  animation: cardFlip 0.4s ease;
+}
+
+/* Card flip animation (update if already exists) */
+@keyframes cardFlip {
+  0% {
+    transform: rotateY(0deg) translateY(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: rotateY(180deg) translateY(0);
+    opacity: 1;
+  }
+}
