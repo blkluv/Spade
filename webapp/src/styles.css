@@ -119,6 +119,9 @@ body {
 }
 
 .nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -141,7 +144,7 @@ body {
 }
 
 .nav-icon {
-  font-size: 1.5rem;  /* control icon size */
+  font-size: 1.5rem; /* control icon size */
   transition: color 0.3s ease; /* optional color transition */
 }
 
@@ -593,6 +596,39 @@ body {
 }
 
 .avatar-player4 {
+  background: linear-gradient(to bottom right, #eb3349, #f45c43);
+}
+
+.mini-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: white;
+  background: var(--primary-gradient);
+}
+
+.mini-avatar.avatar-default {
+  background: linear-gradient(to bottom right, #6a11cb, #2575fc);
+}
+
+.mini-avatar.avatar-player1 {
+  background: linear-gradient(to bottom right, #f12711, #f5af19);
+}
+
+.mini-avatar.avatar-player2 {
+  background: linear-gradient(to bottom right, #11998e, #38ef7d);
+}
+
+.mini-avatar.avatar-player3 {
+  background: linear-gradient(to bottom right, #8e2de2, #4a00e0);
+}
+
+.mini-avatar.avatar-player4 {
   background: linear-gradient(to bottom right, #eb3349, #f45c43);
 }
 

@@ -65,11 +65,19 @@ function App() {
           </button>
 
           <button
-            className={`nav-button ${currentPage === "profile" ? "active" : ""}`}
+            className={`nav-button ${
+              currentPage === "profile" ? "active" : ""
+            }`}
             onClick={() => navigateTo("profile")}
             aria-label="Profile"
           >
-            <FaUser className="nav-icon" />
+            {user ? (
+              <div className={`mini-avatar avatar-${user.avatar}`}>
+                {user.username.charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              <FaUser className="nav-icon" />
+            )}
           </button>
 
           <button
