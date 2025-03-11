@@ -408,9 +408,9 @@ if __name__ == '__main__':
     DEBUG = True
 
     if DEBUG:
-        app.run(debug=False, host='127.0.0.1', port=5000
-                , ssl_context=('./cert.pem', './key.pem')
-                )
-        socketio.run(app, ssl_context='adhoc')
+  #      app.run(debug=False, host='127.0.0.1', port=5000
+   #             , ssl_context=('./cert.pem', './key.pem')
+    #            )
+        socketio.run(app, debug=True, host='0.0.0.0', port=5000)
     else:
         serve(app, host='0.0.0.0', port=5000)
