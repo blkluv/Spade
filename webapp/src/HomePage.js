@@ -7,26 +7,27 @@ function HomePage({ socket, darkMode }) {
   const [showRaiseInput, setShowRaiseInput] = useState(false);
   const [raiseAmount, setRaiseAmount] = useState("");
   const [cardsScanned, setCardsScanned] = useState(false);
+  const [cardsConfirmed, setCardsConfirmed] = useState(false); // New state for confirmation
   const [cards, setCards] = useState([]);
+  const [cardsRevealed, setCardsRevealed] = useState(false);
   const [actionStatus, setActionStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const sendAction = async (action) => {
+    // Existing function
     setIsLoading(true);
     setActionStatus(`Processing: ${action}...`);
 
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setActionStatus(`Action "${action}" completed.`);
-
-      // Clear status after 2 seconds
       setTimeout(() => setActionStatus(""), 2000);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Button handlers (existing)
   const handleRaiseClick = () => {
     setShowRaiseInput((prev) => !prev);
   };
@@ -81,9 +82,11 @@ function HomePage({ socket, darkMode }) {
 
       if (response?.found) {
         setCardsScanned(true);
+        setCardsConfirmed(false); // Reset confirmation when new cards are scanned
         setCards(response.predictions);
-        setActionStatus("Cards successfully identified!");
-        setTimeout(() => setActionStatus(""), 2000);
+        setCardsRevealed(false);
+        setActionStatus("Please verify your cards are correct.");
+        setTimeout(() => setActionStatus(""), 3000);
       }
     } catch (error) {
       console.error("Capture error:", error);
@@ -93,24 +96,67 @@ function HomePage({ socket, darkMode }) {
     }
   };
 
+  // New function to confirm cards
+  const handleConfirmCards = () => {
+    setCardsConfirmed(true);
+    setActionStatus("Cards confirmed! Click to reveal them.");
+    setTimeout(() => setActionStatus(""), 2000);
+  };
+
+  // New function to retry scan
+  const handleRetryScan = () => {
+    setCardsScanned(false);
+    setCardsConfirmed(false);
+    setCards([]);
+    setCameraEnabled(true);
+    setActionStatus("Restarting card scan.");
+    setTimeout(() => setActionStatus(""), 2000);
+  };
+
+  // Reveal cards function (modified)
+  const revealCards = () => {
+    if (cardsConfirmed && !cardsRevealed) {
+      setCardsRevealed(true);
+      setActionStatus("Cards revealed!");
+      setTimeout(() => setActionStatus(""), 1500);
+    }
+  };
+
+  // Reset scan completely
+  const resetScan = () => {
+    setCardsScanned(false);
+    setCardsConfirmed(false);
+    setCards([]);
+    setCardsRevealed(false);
+    setCameraEnabled(false);
+  };
+
   const renderCards = () => {
     if (!cards.length) return null;
 
     return (
-      <div className="poker-cards">
+      <div
+        className={`poker-cards ${cardsConfirmed ? "clickable" : ""}`}
+        onClick={cardsConfirmed ? revealCards : undefined}
+      >
         {cards.map((card, index) => (
-          <div className="poker-card" key={index}>
-            {card}
+          <div
+            key={index}
+            className={`poker-card ${
+              !cardsRevealed && cardsConfirmed ? "covered" : ""
+            }`}
+          >
+            {!cardsRevealed && cardsConfirmed ? (
+              <div className="card-back">
+                <span className="reveal-hint">Click to reveal</span>
+              </div>
+            ) : (
+              card
+            )}
           </div>
         ))}
       </div>
     );
-  };
-
-  const resetScan = () => {
-    setCardsScanned(false);
-    setCards([]);
-    setCameraEnabled(false);
   };
 
   return (
@@ -120,9 +166,28 @@ function HomePage({ socket, darkMode }) {
           <div className="scanned-result">
             <h2>Your Cards</h2>
             {renderCards()}
-            <button className="reset-button" onClick={resetScan}>
-              Scan New Cards
-            </button>
+
+            {/* Confirmation controls */}
+            {!cardsConfirmed ? (
+              <div className="card-verification">
+                <p className="verification-text">Are these cards correct?</p>
+                <div className="verification-buttons">
+                  <button
+                    className="confirm-button"
+                    onClick={handleConfirmCards}
+                  >
+                    Confirm Cards
+                  </button>
+                  <button className="retry-button" onClick={handleRetryScan}>
+                    Retry Scan
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="reset-button" onClick={resetScan}>
+                Scan New Cards
+              </button>
+            )}
           </div>
         ) : (
           <div className="scanner-container">
