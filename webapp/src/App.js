@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaMoon, FaSun } from "react-icons/fa";
+import { FaMoon, FaSun, FaHome, FaUser } from "react-icons/fa";
 import { GiPokerHand } from "react-icons/gi";
 import CamDiv from "./CamDiv";
 import HomePage from "./HomePage";
@@ -59,17 +59,17 @@ function App() {
           <button
             className={`nav-button ${currentPage === "home" ? "active" : ""}`}
             onClick={() => navigateTo("home")}
+            aria-label="Home"
           >
-            Home
+            <FaHome className="nav-icon" />
           </button>
 
           <button
-            className={`nav-button ${
-              currentPage === "profile" ? "active" : ""
-            }`}
+            className={`nav-button ${currentPage === "profile" ? "active" : ""}`}
             onClick={() => navigateTo("profile")}
+            aria-label="Profile"
           >
-            {user ? user.username : "Profile"}
+            <FaUser className="nav-icon" />
           </button>
 
           <button
