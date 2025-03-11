@@ -39,7 +39,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 app.secret_key = 'a_random_secret_key_12345'  # Required for session handling (optional)
 
-#MODEL_PATH = '../server/assets/models/best_60_23.pt'
+MODEL_PATH = '../webapp/models/best_60_23.pt'
 
 CLIENT_ID = "258c86af6a9e45ac8fac5185cceff480"
 CLIENT_SECRET = "e5c969b18de0458a95552515897cd7fc"
@@ -63,7 +63,7 @@ shared_resources = SharedResources()
 game = GameRound(players, small_blind=10, big_blind=20, shared_resources=shared_resources)
 
 # Initialize AI model
-#model = YOLO(MODEL_PATH)
+model = YOLO(MODEL_PATH)
 
 
 @socketio.on('connect')
@@ -75,11 +75,6 @@ def process_frame(image_data, n):
     # Convert binary data to OpenCV image
     nparr = np.frombuffer(image_data, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-    return {
-        'predictions': ["10S", "8S"],
-        'found': True
-    }
 
     # Run inference
     print("Running inference")

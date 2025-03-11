@@ -7,7 +7,7 @@ import ProfilePage from "./ProfilePage";
 import { io } from "socket.io-client";
 import "./styles.css";
 
-const socket = io("http://127.0.0.1:5001", {
+const socket = io("http://192.168.0.241:5001", {
   transports: ["websocket"],
   secure: true,
   rejectUnauthorized: false,
