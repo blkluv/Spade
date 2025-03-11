@@ -148,35 +148,64 @@ function HomePage({ socket, darkMode }) {
 
     const hintText = !cardsRevealed ? "Click to reveal" : "Click to hide";
 
+    // Function to parse card string and extract rank and suit
+    const parseCard = (cardStr) => {
+      // The last character is the suit, everything before is the rank
+      const rank = cardStr.slice(0, -1);
+      const suitLetter = cardStr.slice(-1).toUpperCase();
+
+      // Map suit letters to symbols
+      let suitSymbol;
+      switch (suitLetter) {
+        case "S":
+          suitSymbol = "♠";
+          break;
+        case "H":
+          suitSymbol = "♥";
+          break;
+        case "D":
+          suitSymbol = "♦";
+          break;
+        case "C":
+          suitSymbol = "♣";
+          break;
+        default:
+          suitSymbol = suitLetter;
+      }
+
+      return { rank, suit: suitSymbol };
+    };
+
     return (
       <div
         className={`poker-cards clickable`}
-        onClick={
-          cardsConfirmed
-            ? revealCards
-            : !cardsRevealed
-            ? revealCards
-            : undefined
-        }
+        onClick={revealCards}
         data-action-hint={hintText}
       >
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            className={`poker-card ${!cardsRevealed ? "covered" : ""}`}
-          >
-            {!cardsRevealed ? (
-              <div className="card-back">
-                <span className="reveal-hint">Click to reveal</span>
-              </div>
-            ) : (
-              <>
-                {card}
-                <span className="hide-hint">Click to hide</span>
-              </>
-            )}
-          </div>
-        ))}
+        {cards.map((card, index) => {
+          const { rank, suit } = parseCard(card);
+
+          return (
+            <div
+              key={index}
+              className={`poker-card ${!cardsRevealed ? "covered" : ""} ${
+                suit === "♥" || suit === "♦" ? "red-card" : "black-card"
+              }`}
+            >
+              {!cardsRevealed ? (
+                <div className="card-back">
+                  <span className="reveal-hint">Click to reveal</span>
+                </div>
+              ) : (
+                <div className="card-content">
+                  <div className="card-rank">{rank}</div>
+                  <div className="card-suit">{suit}</div>
+                  <span className="hide-hint">Click to hide</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
