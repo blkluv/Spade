@@ -1,340 +1,366 @@
-FERTIG
+// src/main/java/com/pokerapp/PokerApplication.java
+package com.pokerapp;
 
-
-2025-03-12T23:55:59.665+01:00 ERROR 15837 --- [  restartedMain] o.s.b.web.embedded.tomcat.TomcatStarter  : Error starting Tomcat context. Exception: org.springframework.beans.factory.UnsatisfiedDependencyException. Message: Error creating bean with name 'jwtAuthenticationFilter': Unsatisfied dependency expressed through field 'userDetailsService': Error creating bean with name 'userDetailsServiceImpl' defined in file [/Users/sebastianrogg/IdeaProjects/Pokerapp/target/classes/com/pokerapp/security/UserDetailsServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'userRepository' defined in com.pokerapp.repository.UserRepository defined in @EnableJpaRepositories declared on PokerappApplication: Cannot resolve reference to bean 'jpaSharedEM_entityManagerFactory' while setting bean property 'entityManager'
-2025-03-12T23:55:59.690+01:00  INFO 15837 --- [  restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
-
-// src/main/java/com/pokerapp/service/impl/UserRoleServiceImpl.java
-package com.pokerapp.service.impl;
-
+import com.pokerapp.domain.card.Hand;
+import com.pokerapp.domain.game.*;
+import com.pokerapp.domain.invitation.Invitation;
+import com.pokerapp.domain.invitation.InvitationStatus;
+import com.pokerapp.domain.replay.GameAction;
+import com.pokerapp.domain.replay.Replay;
+import com.pokerapp.domain.statistics.GameResult;
+import com.pokerapp.domain.statistics.Statistics;
 import com.pokerapp.domain.user.Player;
 import com.pokerapp.domain.user.Spectator;
 import com.pokerapp.domain.user.User;
 import com.pokerapp.domain.user.UserType;
-import com.pokerapp.exception.NotFoundException;
-import com.pokerapp.repository.PlayerRepository;
-import com.pokerapp.repository.SpectatorRepository;
-import com.pokerapp.repository.UserRepository;
-import com.pokerapp.service.UserRoleService;
+import com.pokerapp.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import javax.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.*;
 
-@Service
-public class UserRoleServiceImpl implements UserRoleService {
-
-    private final UserRepository userRepository;
-    private final PlayerRepository playerRepository;
-    private final SpectatorRepository spectatorRepository;
+@SpringBootApplication
+@EnableJpaRepositories(basePackages = "com.pokerapp.repository")
+@EntityScan(basePackages = "com.pokerapp.domain")
+public class PokerApplication {
 
     @Autowired
-    public UserRoleServiceImpl(
+    private PasswordEncoder passwordEncoder;
+
+    public static void main(String[] args) {
+        SpringApplication.run(PokerApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner setupTestData(
             UserRepository userRepository,
             PlayerRepository playerRepository,
-            SpectatorRepository spectatorRepository) {
-        this.userRepository = userRepository;
-        this.playerRepository = playerRepository;
-        this.spectatorRepository = spectatorRepository;
-    }
+            SpectatorRepository spectatorRepository,
+            TableRepository tableRepository,
+            GameRepository gameRepository,
+            ReplayRepository replayRepository,
+            GameResultRepository gameResultRepository,
+            StatisticsRepository statisticsRepository,
+            InvitationRepository invitationRepository
+    ) {
+        return args -> {
+            // Only run if user repository is empty (first run)
+            if (userRepository.count() == 0) {
+                System.out.println("Initializing test data...");
 
-    @Override
-    @Transactional
-    public Player convertToPlayer(User user) {
-        if (user.getUserType() == UserType.PLAYER) {
-            return playerRepository.findById(user.getId())
-                    .orElseThrow(() -> new NotFoundException("Player not found"));
-        }
-        
-        // Create a new Player and copy attributes
-        Player player = new Player();
-        player.setId(user.getId());
-        player.setUsername(user.getUsername());
-        player.setEmail(user.getEmail());
-        player.setPassword(user.getPassword());
-        player.setBalance(user.getBalance());
-        player.setAvatar(user.getAvatar());
-        player.setRoles(user.getRoles());
-        player.addRole("PLAYER");
-        player.setUserType(UserType.PLAYER);
-        
-        return playerRepository.save(player);
-    }
-
-    @Override
-    @Transactional
-    public Spectator convertToSpectator(User user) {
-        if (user.getUserType() == UserType.SPECTATOR) {
-            return spectatorRepository.findById(user.getId())
-                    .orElseThrow(() -> new NotFoundException("Spectator not found"));
-        }
-        
-        // Create a new Spectator and copy attributes
-        Spectator spectator = new Spectator();
-        spectator.setId(user.getId());
-        spectator.setUsername(user.getUsername());
-        spectator.setEmail(user.getEmail());
-        spectator.setPassword(user.getPassword());
-        spectator.setBalance(user.getBalance());
-        spectator.setAvatar(user.getAvatar());
-        spectator.setRoles(user.getRoles());
-        spectator.addRole("SPECTATOR");
-        spectator.setUserType(UserType.SPECTATOR);
-        
-        return spectatorRepository.save(spectator);
-    }
-
-    @Override
-    public User getUserWithRoles(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                // Create users
+                List<User> users = createTestUsers(userRepository);
                 
-        switch (user.getUserType()) {
-            case PLAYER:
-                return playerRepository.findById(userId)
-                        .orElse(user);
-            case SPECTATOR:
-                return spectatorRepository.findById(userId)
-                        .orElse(user);
-            default:
-                return user;
-        }
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-7. Add New Controller Endpoints for Role Management
-
-    
-// src/main/java/com/pokerapp/api/controller/UserRoleController.java
-package com.pokerapp.api.controller;
-
-import com.pokerapp.api.dto.response.UserDto;
-import com.pokerapp.domain.user.Player;
-import com.pokerapp.domain.user.Spectator;
-import com.pokerapp.domain.user.User;
-import com.pokerapp.service.UserRoleService;
-import com.pokerapp.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-@RestController
-@RequestMapping("/api/users/roles")
-public class UserRoleController {
-
-    private final UserRoleService userRoleService;
-    private final UserService userService;
-
-    @Autowired
-    public UserRoleController(UserRoleService userRoleService, UserService userService) {
-        this.userRoleService = userRoleService;
-        this.userService = userService;
+                // Create players
+                List<Player> players = createTestPlayers(playerRepository);
+                
+                // Create spectators
+                List<Spectator> spectators = createTestSpectators(spectatorRepository);
+                
+                // Create tables
+                List<Table> tables = createTestTables(tableRepository, players);
+                
+                // Create games
+                List<Game> games = createTestGames(gameRepository, tables, players);
+                
+                // Create replays
+                List<Replay> replays = createTestReplays(replayRepository, games, players);
+                
+                // Create game results
+                List<GameResult> results = createTestGameResults(gameResultRepository, games, players);
+                
+                // Create statistics
+                createTestStatistics(statisticsRepository, players, results);
+                
+                // Create invitations
+                createTestInvitations(invitationRepository, users, players, tables);
+                
+                System.out.println("Test data initialization complete!");
+            }
+        };
     }
 
-    @PostMapping("/player")
-    public ResponseEntity<UserDto> becomePlayer() {
-        User currentUser = userService.getCurrentUser();
-        Player player = userRoleService.convertToPlayer(currentUser);
-        return ResponseEntity.ok(convertToDto(player));
-    }
-
-    @PostMapping("/spectator")
-    public ResponseEntity<UserDto> becomeSpectator() {
-        User currentUser = userService.getCurrentUser();
-        Spectator spectator = userRoleService.convertToSpectator(currentUser);
-        return ResponseEntity.ok(convertToDto(spectator));
-    }
-
-    private UserDto convertToDto(User user) {
-        UserDto dto = new UserDto();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUsername());
-        dto.setEmail(user.getEmail());
-        dto.setBalance(user.getBalance());
-        dto.setRole(user.getUserType().name());
+    private List<User> createTestUsers(UserRepository userRepository) {
+        List<User> users = new ArrayList<>();
         
-        if (user instanceof Player) {
-            Player player = (Player) user;
-            dto.setCurrentTableId(player.getCurrentTableId());
-        } else if (user instanceof Spectator) {
-            Spectator spectator = (Spectator) user;
-            dto.setWatchingTableId(spectator.getWatchingTableId());
+        // Regular users
+        for (int i = 1; i <= 3; i++) {
+            User user = new User();
+            user.setUsername("user" + i);
+            user.setEmail("user" + i + "@example.com");
+            user.setPassword(passwordEncoder.encode("password"));
+            user.setBalance(100.0 * i);
+            user.setUserType(UserType.REGULAR);
+            user.addRole("USER");
+            
+            users.add(userRepository.save(user));
         }
         
-        return dto;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-8. Update UserDto to Include More Role Information
-
-    
-// src/main/java/com/pokerapp/api/dto/response/UserDto.java
-package com.pokerapp.api.dto.response;
-
-import lombok.Data;
-
-@Data
-public class UserDto {
-    private Long id;
-    private String username;
-    private String email;
-    private Double balance;
-    private String role;  // User type (REGULAR, PLAYER, SPECTATOR)
-    private Long currentTableId;  // For players
-    private Long watchingTableId; // For spectators
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-9. Update application.yml for H2 Database
-
-    
-spring:
-  datasource:
-    url: jdbc:h2:mem:pokerdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: password
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-10. Configure Security for H2 Console
-
-// src/main/java/com/pokerapp/config/SecurityConfig.java
-package com.pokerapp.config;
-
-import com.pokerapp.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-
-@Configuration
-@EnableWebSecurity
-@EnableGlobalMethodSecurity(
-    securedEnabled = true,
-    jsr250Enabled = true,
-    prePostEnabled = true
-)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    private final UserDetailsService userDetailsService;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Autowired
-    public SecurityConfig(UserDetailsService userDetailsService, JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.userDetailsService = userDetailsService;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-    }
-
-    @Override
-    public void configure(WebSecurity web) throws Exception {
-        // Resources that should be completely ignored by Spring Security
-        web.ignoring().antMatchers(
-            "/v2/api-docs",
-            "/configuration/ui",
-            "/swagger-resources/**",
-            "/configuration/security",
-            "/swagger-ui.html",
-            "/webjars/**",
-            "/favicon.ico"
-        );
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            // Enable CORS and disable CSRF
-            .cors().configurationSource(corsConfigurationSource()).and()
-            .csrf().disable()
-            
-            // Set session management to stateless
-            .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            
-            // Set unauthorized requests exception handler
-            .exceptionHandling()
-            .authenticationEntryPoint((request, response, ex) -> {
-                response.setContentType("application/json");
-                response.setStatus(401);
-                response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + ex.getMessage() + "\"}");
-            })
-            .and()
-            
-            // Set permissions on endpoints
-            .authorizeRequests()
-            
-            // Public endpoints
-            .antMatchers("/api/users/register", "/api/users/login").permitAll()
-            .antMatchers("/h2-console/**").permitAll()
-            .antMatchers(HttpMethod.GET, "/api/tables/public").permitAll()
-            .antMatchers("/ws/**").permitAll()
-            
-            // Private endpoints - require authentication
-            .anyRequest().authenticated()
-            .and()
-            
-            // Add JWT filter
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-            
-        // Required for H2 console to work properly
-        http.headers().frameOptions().disable();
-    }
-
-    @Bean
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
-        configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
+        // Admin user
+        User admin = new User();
+        admin.setUsername("admin");
+        admin.setEmail("admin@example.com");
+        admin.setPassword(passwordEncoder.encode("admin123"));
+        admin.setBalance(1000.0);
+        admin.setUserType(UserType.REGULAR);
+        admin.addRole("USER");
+        admin.addRole("ADMIN");
         
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        users.add(userRepository.save(admin));
         
-        return source;
+        return users;
+    }
+
+    private List<Player> createTestPlayers(PlayerRepository playerRepository) {
+        List<Player> players = new ArrayList<>();
+        
+        // Create 5 players
+        for (int i = 1; i <= 5; i++) {
+            Player player = new Player();
+            player.setUsername("player" + i);
+            player.setEmail("player" + i + "@example.com");
+            player.setPassword(passwordEncoder.encode("password"));
+            player.setBalance(500.0 * i);
+            player.setChips(0.0);
+            player.setUserType(UserType.PLAYER);
+            player.addRole("USER");
+            player.addRole("PLAYER");
+            
+            // Create a hand for the player
+            Hand hand = new Hand();
+            player.setHand(hand);
+            
+            players.add(playerRepository.save(player));
+        }
+        
+        return players;
+    }
+
+    private List<Spectator> createTestSpectators(SpectatorRepository spectatorRepository) {
+        List<Spectator> spectators = new ArrayList<>();
+        
+        // Create 3 spectators
+        for (int i = 1; i <= 3; i++) {
+            Spectator spectator = new Spectator();
+            spectator.setUsername("spectator" + i);
+            spectator.setEmail("spectator" + i + "@example.com");
+            spectator.setPassword(passwordEncoder.encode("password"));
+            spectator.setBalance(100.0);
+            spectator.setUserType(UserType.SPECTATOR);
+            spectator.addRole("USER");
+            spectator.addRole("SPECTATOR");
+            
+            spectators.add(spectatorRepository.save(spectator));
+        }
+        
+        return spectators;
+    }
+
+    private List<Table> createTestTables(TableRepository tableRepository, List<Player> players) {
+        List<Table> tables = new ArrayList<>();
+        
+        // Create 3 tables with different settings
+        Table table1 = new Table();
+        table1.setName("Beginner's Table");
+        table1.setDescription("Low stakes, perfect for beginners");
+        table1.setMaxPlayers(6);
+        table1.setMinBuyIn(10.0);
+        table1.setMaxBuyIn(100.0);
+        table1.setIsPrivate(false);
+        table1.setOwner(players.get(0));
+        table1.addPlayer(players.get(0), 50.0);
+        if (players.size() > 1) {
+            table1.addPlayer(players.get(1), 75.0);
+        }
+        tables.add(tableRepository.save(table1));
+        
+        Table table2 = new Table();
+        table2.setName("Pro Table");
+        table2.setDescription("High stakes for experienced players");
+        table2.setMaxPlayers(8);
+        table2.setMinBuyIn(100.0);
+        table2.setMaxBuyIn(1000.0);
+        table2.setIsPrivate(false);
+        table2.setOwner(players.get(2));
+        table2.addPlayer(players.get(2), 500.0);
+        if (players.size() > 3) {
+            table2.addPlayer(players.get(3), 750.0);
+        }
+        tables.add(tableRepository.save(table2));
+        
+        Table table3 = new Table();
+        table3.setName("Private Game");
+        table3.setDescription("Invitation only");
+        table3.setMaxPlayers(4);
+        table3.setMinBuyIn(50.0);
+        table3.setMaxBuyIn(500.0);
+        table3.setIsPrivate(true);
+        table3.setOwner(players.get(4));
+        table3.addPlayer(players.get(4), 250.0);
+        tables.add(tableRepository.save(table3));
+        
+        return tables;
+    }
+
+    private List<Game> createTestGames(GameRepository gameRepository, List<Table> tables, List<Player> players) {
+        List<Game> games = new ArrayList<>();
+        
+        // Create a game for the first table
+        if (!tables.isEmpty() && tables.get(0).getPlayers().size() >= 2) {
+            Game game = new Game();
+            game.setTable(tables.get(0));
+            game.setSmallBlind(tables.get(0).getMinBuyIn() / 100);
+            game.setBigBlind(tables.get(0).getMinBuyIn() / 50);
+            game.setStatus(GameStatus.IN_PROGRESS);
+            game.setDealerPosition(0);
+            
+            // Set as current game
+            tables.get(0).setCurrentGame(game);
+            
+            games.add(gameRepository.save(game));
+        }
+        
+        // Create a finished game for the second table
+        if (tables.size() > 1) {
+            Game game = new Game();
+            game.setTable(tables.get(1));
+            game.setSmallBlind(tables.get(1).getMinBuyIn() / 100);
+            game.setBigBlind(tables.get(1).getMinBuyIn() / 50);
+            game.setStatus(GameStatus.FINISHED);
+            game.setDealerPosition(0);
+            
+            games.add(gameRepository.save(game));
+        }
+        
+        return games;
+    }
+
+    private List<Replay> createTestReplays(ReplayRepository replayRepository, List<Game> games, List<Player> players) {
+        List<Replay> replays = new ArrayList<>();
+        
+        // Create replay for each game
+        for (int i = 0; i < games.size(); i++) {
+            Game game = games.get(i);
+            
+            Replay replay = new Replay();
+            replay.setGame(game);
+            replay.setStartTime(LocalDateTime.now().minusHours(i + 1));
+            
+            // Add some actions to the replay
+            if (i == 0) { // For the in-progress game
+                for (int j = 0; j < Math.min(3, players.size()); j++) {
+                    GameAction action = new GameAction();
+                    action.setPlayer(players.get(j));
+                    action.setActionType("MOVE");
+                    action.setActionData(j % 2 == 0 ? "CHECK:0.0" : "RAISE:10.0");
+                    action.setSequenceNumber(j + 1);
+                    
+                    replay.recordAction(action);
+                }
+            } else { // For the finished game
+                for (int j = 0; j < Math.min(5, players.size()); j++) {
+                    GameAction action = new GameAction();
+                    action.setPlayer(players.get(j % players.size()));
+                    
+                    if (j < 3) {
+                        action.setActionType("MOVE");
+                        action.setActionData(j == 0 ? "CALL:10.0" : j == 1 ? "RAISE:20.0" : "ALL_IN:100.0");
+                    } else {
+                        action.setActionType("MOVE");
+                        action.setActionData(j == 3 ? "FOLD:0.0" : "CALL:100.0");
+                    }
+                    
+                    action.setSequenceNumber(j + 1);
+                    replay.recordAction(action);
+                }
+                
+                // Mark the replay as complete
+                replay.setEndTime(LocalDateTime.now().minusMinutes(30));
+            }
+            
+            replays.add(replayRepository.save(replay));
+        }
+        
+        return replays;
+    }
+
+    private List<GameResult> createTestGameResults(GameResultRepository gameResultRepository, List<Game> games, List<Player> players) {
+        List<GameResult> results = new ArrayList<>();
+        
+        // Create results for finished games
+        for (Game game : games) {
+            if (game.getStatus() == GameStatus.FINISHED) {
+                GameResult result = new GameResult();
+                result.setGame(game);
+                
+                // Distribute winnings
+                Player winner = players.get(0); // First player wins
+                result.getWinnings().put(winner, 150.0);
+                
+                // Record losses for other players
+                for (int i = 1; i < Math.min(3, players.size()); i++) {
+                    result.getWinnings().put(players.get(i), 0.0);
+                }
+                
+                results.add(gameResultRepository.save(result));
+            }
+        }
+        
+        return results;
+    }
+
+    private void createTestStatistics(StatisticsRepository statisticsRepository, List<Player> players, List<GameResult> results) {
+        // Create statistics for players
+        for (Player player : players) {
+            Statistics statistics = new Statistics();
+            statistics.setUser(player);
+            statistics.setGamesPlayed(1 + new Random().nextInt(10));
+            statistics.setGamesWon(new Random().nextInt(statistics.getGamesPlayed() + 1));
+            statistics.setTotalWinnings((double) (new Random().nextInt(1000)));
+            statistics.setWinRate((double) statistics.getGamesWon() / statistics.getGamesPlayed());
+            
+            statisticsRepository.save(statistics);
+        }
+    }
+
+    private void createTestInvitations(InvitationRepository invitationRepository, List<User> users, List<Player> players, List<Table> tables) {
+        // Create some test invitations
+        if (!tables.isEmpty() && tables.size() >= 2 && !users.isEmpty() && !players.isEmpty()) {
+            // Pending invitation
+            Invitation invitation1 = new Invitation();
+            invitation1.setSender(players.get(0));
+            invitation1.setRecipient(users.get(0));
+            invitation1.setTableId(tables.get(0).getId());
+            invitation1.setMessage("Join my table for a friendly game!");
+            invitation1.setStatus(InvitationStatus.PENDING);
+            invitationRepository.save(invitation1);
+            
+            // Accepted invitation
+            Invitation invitation2 = new Invitation();
+            invitation2.setSender(players.get(1));
+            invitation2.setRecipient(users.get(1));
+            invitation2.setTableId(tables.get(1).getId());
+            invitation2.setMessage("Let's play some high stakes poker!");
+            invitation2.setStatus(InvitationStatus.ACCEPTED);
+            invitation2.setCreatedAt(LocalDateTime.now().minusDays(1));
+            invitationRepository.save(invitation2);
+            
+            // Declined invitation
+            Invitation invitation3 = new Invitation();
+            invitation3.setSender(players.get(2));
+            invitation3.setRecipient(users.get(2));
+            invitation3.setTableId(tables.get(2).getId());
+            invitation3.setMessage("Private game, only the best players!");
+            invitation3.setStatus(InvitationStatus.DECLINED);
+            invitation3.setCreatedAt(LocalDateTime.now().minusDays(2));
+            invitationRepository.save(invitation3);
+        }
     }
 }
