@@ -1,880 +1,4 @@
-Poker Project Implementation
-I'll create all necessary classes following the optimized structure. For clarity, I'll organize this by package structure.
 
-Domain Layer Classes
-User Domain
-
-    
-// src/main/java/com/pokerapp/domain/user/User.java
-package com.pokerapp.domain.user;
-
-import lombok.Data;
-import javax.persistence.*;
-import java.util.UUID;
-
-@Data
-@Entity
-@Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED)
-public abstract class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(unique = true)
-    private String username;
-    
-    private String password;
-    
-    @Column(unique = true)
-    private String email;
-    
-    private Double balance;
-    
-    @Lob
-    private byte[] avatar;
-    
-    @Version
-    private Long version;
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/user/Player.java
-package com.pokerapp.domain.user;
-
-import com.pokerapp.domain.game.Move;
-import com.pokerapp.domain.card.Hand;
-import lombok.Data;
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "players")
-public class Player extends User {
-    private Double chips;
-    
-    @Enumerated(EnumType.STRING)
-    private PlayerStatus status = PlayerStatus.SITTING_OUT;
-    
-    @OneToOne(cascade = CascadeType.ALL)
-    private Hand hand;
-    
-    public void makeMove(Move move) {
-        // Logic for processing a player's move
-    }
-    
-    public void rebuy(Double amount) {
-        if (amount <= this.getBalance()) {
-            this.setChips(this.getChips() + amount);
-            this.setBalance(this.getBalance() - amount);
-        } else {
-            throw new IllegalArgumentException("Insufficient balance for rebuy");
-        }
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/user/Spectator.java
-package com.pokerapp.domain.user;
-
-import com.pokerapp.domain.game.Game;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.Map;
-import java.util.HashMap;
-
-@Data
-@Entity
-@Table(name = "spectators")
-public class Spectator extends User {
-    
-    public Map<Player, Double> viewWinOdds() {
-        // Logic to calculate win odds
-        return new HashMap<>();
-    }
-    
-    public void watchReplay(Game game) {
-        // Logic for watching game replay
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/user/PlayerStatus.java
-package com.pokerapp.domain.user;
-
-public enum PlayerStatus {
-    ACTIVE, FOLDED, ALL_IN, SITTING_OUT
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Card Domain
-
-    
-// src/main/java/com/pokerapp/domain/card/Suit.java
-package com.pokerapp.domain.card;
-
-public enum Suit {
-    HEARTS, DIAMONDS, CLUBS, SPADES
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/card/Rank.java
-package com.pokerapp.domain.card;
-
-public enum Rank {
-    TWO(2),
-    THREE(3),
-    FOUR(4),
-    FIVE(5),
-    SIX(6),
-    SEVEN(7),
-    EIGHT(8),
-    NINE(9),
-    TEN(10),
-    JACK(11),
-    QUEEN(12),
-    KING(13),
-    ACE(14);
-    
-    private final int value;
-    
-    Rank(int value) {
-        this.value = value;
-    }
-    
-    public int getValue() {
-        return value;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/card/Card.java
-package com.pokerapp.domain.card;
-
-import lombok.Data;
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "cards")
-public class Card {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Enumerated(EnumType.STRING)
-    private Suit suit;
-    
-    @Enumerated(EnumType.STRING)
-    private Rank rank;
-    
-    private boolean isShowing;
-    
-    @Override
-    public String toString() {
-        return rank + " of " + suit;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/card/Hand.java
-package com.pokerapp.domain.card;
-
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Entity
-@Table(name = "hands")
-public class Hand {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Card> cards = new ArrayList<>();
-    
-    public void addCard(Card card) {
-        cards.add(card);
-    }
-    
-    public void clear() {
-        cards.clear();
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/card/Deck.java
-package com.pokerapp.domain.card;
-
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collections;
-
-@Data
-@Entity
-@Table(name = "decks")
-public class Deck {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Card> cards = new ArrayList<>();
-    
-    @PostLoad
-    public void initialize() {
-        if (cards.isEmpty()) {
-            for (Suit suit : Suit.values()) {
-                for (Rank rank : Rank.values()) {
-                    Card card = new Card();
-                    card.setSuit(suit);
-                    card.setRank(rank);
-                    card.setShowing(false);
-                    cards.add(card);
-                }
-            }
-            shuffle();
-        }
-    }
-    
-    public void shuffle() {
-        Collections.shuffle(cards);
-    }
-    
-    public Card drawCard() {
-        if (cards.isEmpty()) {
-            throw new IllegalStateException("Deck is empty");
-        }
-        return cards.remove(0);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Game Domain
-
-    
-// src/main/java/com/pokerapp/domain/game/MoveType.java
-package com.pokerapp.domain.game;
-
-public enum MoveType {
-    CHECK, CALL, RAISE, FOLD, ALL_IN
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/Move.java
-package com.pokerapp.domain.game;
-
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "moves")
-public class Move {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Enumerated(EnumType.STRING)
-    private MoveType type;
-    
-    private Double amount;
-    
-    @ManyToOne
-    private Player player;
-    
-    @ManyToOne
-    private BettingRound bettingRound;
-    
-    private Long timestamp = System.currentTimeMillis();
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/BettingStage.java
-package com.pokerapp.domain.game;
-
-public enum BettingStage {
-    PREFLOP, FLOP, TURN, RIVER
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/BettingRound.java
-package com.pokerapp.domain.game;
-
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Entity
-@Table(name = "betting_rounds")
-public class BettingRound {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Enumerated(EnumType.STRING)
-    private BettingStage stage;
-    
-    private Double currentBet;
-    
-    @ManyToOne
-    private GameRound gameRound;
-    
-    @OneToMany(mappedBy = "bettingRound", cascade = CascadeType.ALL)
-    private List<Move> moves = new ArrayList<>();
-    
-    @Transient
-    private int currentPlayerIndex;
-    
-    public void processMove(Player player, Move move) {
-        // Logic to process a player's move
-        move.setPlayer(player);
-        move.setBettingRound(this);
-        moves.add(move);
-    }
-    
-    public Player getNextPlayer() {
-        // Logic to determine the next player
-        return null; // Placeholder
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/GameStatus.java
-package com.pokerapp.domain.game;
-
-public enum GameStatus {
-    WAITING, STARTING, IN_PROGRESS, FINISHED
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/GameRound.java
-package com.pokerapp.domain.game;
-
-import com.pokerapp.domain.card.Card;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Entity
-@Table(name = "game_rounds")
-public class GameRound {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    private Integer roundNumber;
-    
-    private Double pot = 0.0;
-    
-    @OneToMany(cascade = CascadeType.ALL)
-    private List<Card> communityCards = new ArrayList<>();
-    
-    @OneToMany(mappedBy = "gameRound", cascade = CascadeType.ALL)
-    private List<BettingRound> bettingRounds = new ArrayList<>();
-    
-    @ManyToOne
-    private Game game;
-    
-    @OneToOne
-    private BettingRound currentBettingRound;
-    
-    public void dealCommunityCards(int count) {
-        for (int i = 0; i < count; i++) {
-            Card card = game.getDeck().drawCard();
-            card.setShowing(true);
-            communityCards.add(card);
-        }
-    }
-    
-    public void advanceToNextBettingRound() {
-        BettingStage nextStage;
-        
-        if (currentBettingRound == null) {
-            nextStage = BettingStage.PREFLOP;
-        } else {
-            switch (currentBettingRound.getStage()) {
-                case PREFLOP:
-                    nextStage = BettingStage.FLOP;
-                    dealCommunityCards(3);
-                    break;
-                case FLOP:
-                    nextStage = BettingStage.TURN;
-                    dealCommunityCards(1);
-                    break;
-                case TURN:
-                    nextStage = BettingStage.RIVER;
-                    dealCommunityCards(1);
-                    break;
-                default:
-                    return;
-            }
-        }
-        
-        BettingRound newRound = new BettingRound();
-        newRound.setStage(nextStage);
-        newRound.setCurrentBet(0.0);
-        newRound.setGameRound(this);
-        
-        bettingRounds.add(newRound);
-        currentBettingRound = newRound;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/Game.java
-package com.pokerapp.domain.game;
-
-import com.pokerapp.domain.card.Deck;
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Entity
-@Table(name = "games")
-public class Game {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    private Double smallBlind;
-    
-    private Double bigBlind;
-    
-    private Integer dealerPosition = 0;
-    
-    @Enumerated(EnumType.STRING)
-    private GameStatus status = GameStatus.WAITING;
-    
-    @ManyToOne
-    private Table table;
-    
-    @OneToOne(cascade = CascadeType.ALL)
-    private Deck deck = new Deck();
-    
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
-    private List<GameRound> gameRounds = new ArrayList<>();
-    
-    @OneToOne
-    private GameRound currentRound;
-    
-    public void start() {
-        if (status != GameStatus.WAITING) {
-            throw new IllegalStateException("Game already started");
-        }
-        
-        status = GameStatus.STARTING;
-        deck.initialize();
-        deck.shuffle();
-        
-        // Deal cards to players
-        dealPlayerCards();
-        
-        // Create first round
-        GameRound firstRound = new GameRound();
-        firstRound.setRoundNumber(1);
-        firstRound.setGame(this);
-        gameRounds.add(firstRound);
-        currentRound = firstRound;
-        
-        // Start with preflop betting
-        currentRound.advanceToNextBettingRound();
-        
-        status = GameStatus.IN_PROGRESS;
-    }
-    
-    private void dealPlayerCards() {
-        for (Player player : table.getPlayers()) {
-            if (player.getHand() == null) {
-                player.setHand(new Hand());
-            } else {
-                player.getHand().clear();
-            }
-            
-            // Each player gets 2 cards
-            player.getHand().addCard(deck.drawCard());
-            player.getHand().addCard(deck.drawCard());
-        }
-    }
-    
-    public List<Player> determineWinner() {
-        // Implement winner determination logic using HandEvaluator
-        return new ArrayList<>(); // Placeholder
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/game/Table.java
-package com.pokerapp.domain.game;
-
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Entity
-@Table(name = "poker_tables")
-public class Table {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    private String name;
-    
-    private Integer maxPlayers;
-    
-    private Double minBuyIn;
-    
-    @OneToMany
-    private List<Player> players = new ArrayList<>();
-    
-    @OneToOne(cascade = CascadeType.ALL)
-    private Game currentGame;
-    
-    public Game startNewGame() {
-        Game game = new Game();
-        game.setTable(this);
-        game.setSmallBlind(minBuyIn / 100);
-        game.setBigBlind(minBuyIn / 50);
-        
-        currentGame = game;
-        game.start();
-        
-        return game;
-    }
-    
-    public boolean addPlayer(Player player, Double buyIn) {
-        if (players.size() >= maxPlayers) {
-            return false;
-        }
-        
-        if (buyIn < minBuyIn) {
-            return false;
-        }
-        
-        if (buyIn > player.getBalance()) {
-            return false;
-        }
-        
-        player.setChips(buyIn);
-        player.setBalance(player.getBalance() - buyIn);
-        players.add(player);
-        
-        return true;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Poker Domain
-
-    
-// src/main/java/com/pokerapp/domain/poker/HandRank.java
-package com.pokerapp.domain.poker;
-
-public enum HandRank {
-    HIGH_CARD(1),
-    PAIR(2),
-    TWO_PAIR(3),
-    THREE_OF_A_KIND(4),
-    STRAIGHT(5),
-    FLUSH(6),
-    FULL_HOUSE(7),
-    FOUR_OF_A_KIND(8),
-    STRAIGHT_FLUSH(9),
-    ROYAL_FLUSH(10);
-    
-    private final int value;
-    
-    HandRank(int value) {
-        this.value = value;
-    }
-    
-    public int getValue() {
-        return value;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/poker/HandEvaluator.java
-package com.pokerapp.domain.poker;
-
-import com.pokerapp.domain.card.Card;
-import com.pokerapp.domain.user.Player;
-import java.util.*;
-
-public class HandEvaluator {
-    
-    public HandRank evaluateHand(List<Card> hand, List<Card> communityCards) {
-        List<Card> allCards = new ArrayList<>(hand);
-        allCards.addAll(communityCards);
-        
-        if (isRoyalFlush(allCards)) return HandRank.ROYAL_FLUSH;
-        if (isStraightFlush(allCards)) return HandRank.STRAIGHT_FLUSH;
-        if (isFourOfAKind(allCards)) return HandRank.FOUR_OF_A_KIND;
-        if (isFullHouse(allCards)) return HandRank.FULL_HOUSE;
-        if (isFlush(allCards)) return HandRank.FLUSH;
-        if (isStraight(allCards)) return HandRank.STRAIGHT;
-        if (isThreeOfAKind(allCards)) return HandRank.THREE_OF_A_KIND;
-        if (isTwoPair(allCards)) return HandRank.TWO_PAIR;
-        if (isPair(allCards)) return HandRank.PAIR;
-        
-        return HandRank.HIGH_CARD;
-    }
-    
-    public Map<Player, Integer> compareHands(Map<Player, List<Card>> playerHands, List<Card> communityCards) {
-        Map<Player, Integer> rankings = new HashMap<>();
-        // Implementation for comparing hands and assigning ranks
-        return rankings;
-    }
-    
-    // Implementation for hand evaluation methods
-    private boolean isRoyalFlush(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isStraightFlush(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isFourOfAKind(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isFullHouse(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isFlush(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isStraight(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isThreeOfAKind(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isTwoPair(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-    
-    private boolean isPair(List<Card> cards) {
-        // Implementation
-        return false;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Statistics Domain
-
-    
-// src/main/java/com/pokerapp/domain/statistics/GameResult.java
-package com.pokerapp.domain.statistics;
-
-import com.pokerapp.domain.game.Game;
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.HashMap;
-import java.util.Map;
-
-@Data
-@Entity
-@Table(name = "game_results")
-public class GameResult {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @ManyToOne
-    private Game game;
-    
-    @ElementCollection
-    @CollectionTable(name = "player_winnings", 
-                   joinColumns = @JoinColumn(name = "result_id"))
-    @MapKeyJoinColumn(name = "player_id")
-    @Column(name = "amount")
-    private Map<Player, Double> winnings = new HashMap<>();
-    
-    private Long timestamp = System.currentTimeMillis();
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/statistics/Statistics.java
-package com.pokerapp.domain.statistics;
-
-import com.pokerapp.domain.user.User;
-import lombok.Data;
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "statistics")
-public class Statistics {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @OneToOne
-    private User user;
-    
-    private Integer gamesPlayed = 0;
-    
-    private Integer gamesWon = 0;
-    
-    private Double winRate = 0.0;
-    
-    private Double totalWinnings = 0.0;
-    
-    public void updateStats(GameResult gameResult) {
-        Double winnings = gameResult.getWinnings().getOrDefault(user, 0.0);
-        gamesPlayed++;
-        
-        if (winnings > 0) {
-            gamesWon++;
-        }
-        
-        totalWinnings += winnings;
-        winRate = (double) gamesWon / gamesPlayed;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Replay Domain
-
-    
-// src/main/java/com/pokerapp/domain/replay/GameAction.java
-package com.pokerapp.domain.replay;
-
-import com.pokerapp.domain.game.Move;
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "game_actions")
-public class GameAction {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @ManyToOne
-    private Player player;
-    
-    private String actionType;
-    
-    private String actionData;
-    
-    private Long timestamp;
-    
-    @ManyToOne
-    private Replay replay;
-    
-    public static GameAction fromMove(Move move) {
-        GameAction action = new GameAction();
-        action.setPlayer(move.getPlayer());
-        action.setActionType("MOVE");
-        action.setActionData(move.getType() + ":" + move.getAmount());
-        action.setTimestamp(System.currentTimeMillis());
-        return action;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/replay/Replay.java
-package com.pokerapp.domain.replay;
-
-import com.pokerapp.domain.game.Game;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
-@Entity
-@Table(name = "replays")
-public class Replay {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @OneToOne
-    private Game game;
-    
-    @OneToMany(mappedBy = "replay", cascade = CascadeType.ALL)
-    private List<GameAction> actions = new ArrayList<>();
-    
-    public void recordAction(GameAction action) {
-        action.setReplay(this);
-        actions.add(action);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Repository Layer
-
-    
 // src/main/java/com/pokerapp/repository/UserRepository.java
 package com.pokerapp.repository;
 
@@ -889,10 +13,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 }
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/repository/PlayerRepository.java
 package com.pokerapp.repository;
 
@@ -904,7 +26,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/repository/TableRepository.java
 package com.pokerapp.repository;
 
@@ -919,7 +41,7 @@ public interface TableRepository extends JpaRepository<Table, Long> {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/repository/GameRepository.java
 package com.pokerapp.repository;
 
@@ -936,22 +58,6 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
-// src/main/java/com/pokerapp/repository/StatisticsRepository.java
-package com.pokerapp.repository;
-
-import com.pokerapp.domain.statistics.Statistics;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.Optional;
-
-public interface StatisticsRepository extends JpaRepository<Statistics, Long> {
-    Optional<Statistics> findByUserId(Long userId);
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
 // src/main/java/com/pokerapp/repository/ReplayRepository.java
 package com.pokerapp.repository;
 
@@ -969,7 +75,7 @@ public interface ReplayRepository extends JpaRepository<Replay, Long> {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Service Layer
 
-    
+
 // src/main/java/com/pokerapp/service/UserService.java
 package com.pokerapp.service;
 
@@ -987,7 +93,7 @@ public interface UserService {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/service/impl/UserServiceImpl.java
 package com.pokerapp.service.impl;
 
@@ -1035,18 +141,18 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(registerDto.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
-        
+
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
-        
+
         Player player = new Player();
         player.setUsername(registerDto.getUsername());
         player.setEmail(registerDto.getEmail());
         player.setPassword(passwordEncoder.encode(registerDto.getPassword()));
         player.setBalance(100.0); // Default starting balance
         player.setChips(0.0);     // No chips initially
-        
+
         return userRepository.save(player);
     }
 
@@ -1055,7 +161,7 @@ public class UserServiceImpl implements UserService {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword())
         );
-        
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
         return jwtTokenProvider.generateToken(authentication);
     }
@@ -1084,7 +190,7 @@ public class UserServiceImpl implements UserService {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/service/GameService.java
 package com.pokerapp.service;
 
@@ -1102,239 +208,7 @@ public interface GameService {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
-// src/main/java/com/pokerapp/service/impl/GameServiceImpl.java
-package com.pokerapp.service.impl;
 
-import com.pokerapp.api.dto.request.MoveDto;
-import com.pokerapp.api.dto.response.GameStateDto;
-import com.pokerapp.domain.game.*;
-import com.pokerapp.domain.poker.HandEvaluator;
-import com.pokerapp.domain.replay.GameAction;
-import com.pokerapp.domain.replay.Replay;
-import com.pokerapp.domain.user.Player;
-import com.pokerapp.exception.InvalidMoveException;
-import com.pokerapp.exception.NotFoundException;
-import com.pokerapp.repository.GameRepository;
-import com.pokerapp.repository.PlayerRepository;
-import com.pokerapp.repository.ReplayRepository;
-import com.pokerapp.repository.TableRepository;
-import com.pokerapp.service.GameService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.util.List;
-
-@Service
-public class GameServiceImpl implements GameService {
-
-    private final GameRepository gameRepository;
-    private final TableRepository tableRepository;
-    private final PlayerRepository playerRepository;
-    private final ReplayRepository replayRepository;
-    private final HandEvaluator handEvaluator;
-    private final SimpMessagingTemplate messagingTemplate;
-
-    @Autowired
-    public GameServiceImpl(
-            GameRepository gameRepository,
-            TableRepository tableRepository,
-            PlayerRepository playerRepository,
-            ReplayRepository replayRepository,
-            HandEvaluator handEvaluator,
-            SimpMessagingTemplate messagingTemplate) {
-        this.gameRepository = gameRepository;
-        this.tableRepository = tableRepository;
-        this.playerRepository = playerRepository;
-        this.replayRepository = replayRepository;
-        this.handEvaluator = handEvaluator;
-        this.messagingTemplate = messagingTemplate;
-    }
-
-    @Override
-    @Transactional
-    public Game createGame(Long tableId) {
-        Table table = tableRepository.findById(tableId)
-                .orElseThrow(() -> new NotFoundException("Table not found"));
-                
-        Game game = new Game();
-        game.setTable(table);
-        game.setSmallBlind(table.getMinBuyIn() / 100);
-        game.setBigBlind(table.getMinBuyIn() / 50);
-        game.setStatus(GameStatus.WAITING);
-        
-        game = gameRepository.save(game);
-        
-        // Create and associate replay system
-        Replay replay = new Replay();
-        replay.setGame(game);
-        replayRepository.save(replay);
-        
-        return game;
-    }
-
-    @Override
-    @Transactional
-    public Game startGame(Long gameId) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new NotFoundException("Game not found"));
-                
-        if (game.getStatus() != GameStatus.WAITING) {
-            throw new IllegalStateException("Game is not in WAITING state");
-        }
-        
-        if (game.getTable().getPlayers().size() < 2) {
-            throw new IllegalStateException("Need at least 2 players to start a game");
-        }
-        
-        game.start();
-        Game savedGame = gameRepository.save(game);
-        
-        // Notify all players
-        messagingTemplate.convertAndSend("/topic/games/" + gameId, getGameState(gameId));
-        
-        return savedGame;
-    }
-
-    @Override
-    public GameStateDto getGameState(Long gameId) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new NotFoundException("Game not found"));
-                
-        // Convert game to DTO with appropriate visibility rules
-        GameStateDto gameStateDto = new GameStateDto();
-        // Populate DTO fields...
-        
-        return gameStateDto;
-    }
-
-    @Override
-    @Transactional
-    public GameStateDto makeMove(Long gameId, Long playerId, MoveDto moveDto) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new NotFoundException("Game not found"));
-                
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new NotFoundException("Player not found"));
-                
-        if (game.getStatus() != GameStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Game is not in progress");
-        }
-        
-        GameRound round = game.getCurrentRound();
-        BettingRound bettingRound = round.getCurrentBettingRound();
-        
-        // Check if it's this player's turn
-        if (!isPlayerTurn(game, player)) {
-            throw new InvalidMoveException("Not your turn");
-        }
-        
-        // Create and process move
-        Move move = new Move();
-        move.setType(MoveType.valueOf(moveDto.getType()));
-        move.setAmount(moveDto.getAmount());
-        move.setPlayer(player);
-        
-        bettingRound.processMove(player, move);
-        
-        // Record for replay
-        Replay replay = replayRepository.findByGameId(gameId)
-                .orElseThrow(() -> new NotFoundException("Replay not found"));
-        replay.recordAction(GameAction.fromMove(move));
-        
-        // Check if betting round is complete
-        if (isBettingRoundComplete(bettingRound)) {
-            advanceGame(game);
-        }
-        
-        gameRepository.save(game);
-        
-        // Notify all players
-        GameStateDto gameState = getGameState(gameId);
-        messagingTemplate.convertAndSend("/topic/games/" + gameId, gameState);
-        
-        return gameState;
-    }
-
-    @Override
-    @Transactional
-    public Game endGame(Long gameId) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new NotFoundException("Game not found"));
-                
-        List<Player> winners = game.determineWinner();
-        // Distribute pot to winners
-        
-        game.setStatus(GameStatus.FINISHED);
-        return gameRepository.save(game);
-    }
-    
-    private boolean isPlayerTurn(Game game, Player player) {
-        // Implementation to check if it's the player's turn
-        return true; // Placeholder
-    }
-    
-    private boolean isBettingRoundComplete(BettingRound bettingRound) {
-        // Implementation to check if betting round is complete
-        return false; // Placeholder
-    }
-    
-    private void advanceGame(Game game) {
-        GameRound round = game.getCurrentRound();
-        BettingRound bettingRound = round.getCurrentBettingRound();
-        
-        // If this was the river, determine winners and end the round
-        if (bettingRound.getStage() == BettingStage.RIVER) {
-            List<Player> winners = game.determineWinner();
-            // Distribute pot
-            
-            // Start new round or end game
-            if (shouldStartNewRound(game)) {
-                startNewRound(game);
-            } else {
-                game.setStatus(GameStatus.FINISHED);
-            }
-        } else {
-            // Advance to next betting stage
-            round.advanceToNextBettingRound();
-        }
-    }
-    
-    private boolean shouldStartNewRound(Game game) {
-        // Logic to determine if we should start a new round
-        return true; // Placeholder
-    }
-    
-    private void startNewRound(Game game) {
-        // Implementation to start a new round
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/service/TableService.java
-package com.pokerapp.service;
-
-import com.pokerapp.api.dto.request.TableSettingsDto;
-import com.pokerapp.api.dto.response.TableDto;
-import com.pokerapp.domain.game.Table;
-
-import java.util.List;
-
-public interface TableService {
-    Table createTable(TableSettingsDto settings);
-    Table getTableById(Long id);
-    List<TableDto> getAllTables();
-    TableDto joinTable(Long tableId, Long userId, Double buyIn);
-    TableDto leaveTable(Long tableId, Long userId);
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
 // src/main/java/com/pokerapp/service/HandEvaluationService.java
 package com.pokerapp.service;
 
@@ -1354,7 +228,7 @@ public interface HandEvaluationService {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 API Layer
 
-    
+
 // src/main/java/com/pokerapp/api/dto/request/RegisterDto.java
 package com.pokerapp.api.dto.request;
 
@@ -1368,11 +242,11 @@ public class RegisterDto {
     @NotBlank
     @Size(min = 3, max = 50)
     private String username;
-    
+
     @NotBlank
     @Size(min = 6, max = 120)
     private String password;
-    
+
     @NotBlank
     @Email
     private String email;
@@ -1380,7 +254,7 @@ public class RegisterDto {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/request/LoginDto.java
 package com.pokerapp.api.dto.request;
 
@@ -1391,14 +265,14 @@ import javax.validation.constraints.NotBlank;
 public class LoginDto {
     @NotBlank
     private String username;
-    
+
     @NotBlank
     private String password;
 }
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/request/MoveDto.java
 package com.pokerapp.api.dto.request;
 
@@ -1409,13 +283,13 @@ import javax.validation.constraints.NotNull;
 public class MoveDto {
     @NotNull
     private String type; // "CHECK", "CALL", "RAISE", "FOLD", "ALL_IN"
-    
+
     private Double amount; // Required for RAISE
 }
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/response/GameStateDto.java
 package com.pokerapp.api.dto.response;
 
@@ -1438,7 +312,7 @@ public class GameStateDto {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/controller/UserController.java
 package com.pokerapp.api.controller;
 
@@ -1504,7 +378,7 @@ public class UserController {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/controller/GameController.java
 package com.pokerapp.api.controller;
 
@@ -1556,7 +430,7 @@ public class GameController {
     public ResponseEntity<GameStateDto> makeMove(
             @PathVariable Long gameId,
             @Valid @RequestBody MoveDto moveDto) {
-            
+
         Long playerId = userService.getCurrentUser().getId();
         GameStateDto gameState = gameService.makeMove(gameId, playerId, moveDto);
         return ResponseEntity.ok(gameState);
@@ -1565,184 +439,8 @@ public class GameController {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
-// src/main/java/com/pokerapp/api/websocket/WebSocketController.java
-package com.pokerapp.api.websocket;
 
-import com.pokerapp.api.dto.request.MoveDto;
-import com.pokerapp.api.dto.response.GameStateDto;
-import com.pokerapp.service.GameService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.stereotype.Controller;
 
-import java.security.Principal;
-
-@Controller
-public class WebSocketController {
-
-    private final GameService gameService;
-
-    @Autowired
-    public WebSocketController(GameService gameService) {
-        this.gameService = gameService;
-    }
-
-    @MessageMapping("/games/{gameId}/move")
-    @SendTo("/topic/games/{gameId}")
-    public GameStateDto processMove(
-            @DestinationVariable Long gameId,
-            MoveDto moveDto,
-            SimpMessageHeaderAccessor headerAccessor) {
-            
-        Principal principal = headerAccessor.getUser();
-        Long playerId = Long.parseLong(principal.getName());
-        
-        return gameService.makeMove(gameId, playerId, moveDto);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Configuration
-
-    
-// src/main/java/com/pokerapp/config/SecurityConfig.java
-package com.pokerapp.config;
-
-import com.pokerapp.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    private final UserDetailsService userDetailsService;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Autowired
-    public SecurityConfig(UserDetailsService userDetailsService, JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.userDetailsService = userDetailsService;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-            .cors().and().csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authorizeRequests()
-            .antMatchers("/api/users/register", "/api/users/login").permitAll()
-            .anyRequest().authenticated();
-            
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-    }
-
-    @Bean
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/config/WebSocketConfig.java
-package com.pokerapp.config;
-
-import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-
-@Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
-        registry.setApplicationDestinationPrefixes("/app");
-    }
-
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-            .setAllowedOrigins("*")
-            .withSockJS();
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/config/ApplicationConfig.java
-package com.pokerapp.config;
-
-import com.pokerapp.domain.poker.HandEvaluator;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class ApplicationConfig {
-
-    @Bean
-    public HandEvaluator handEvaluator() {
-        return new HandEvaluator();
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Application Entry Point
-
-    
-// src/main/java/com/pokerapp/PokerApplication.java
-package com.pokerapp;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-
-@SpringBootApplication
-@EnableJpaAuditing
-public class PokerApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(PokerApplication.class, args);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Resources
-
-    
 # src/main/resources/application.yml
 spring:
   datasource:
@@ -1757,7 +455,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
-    
+
 server:
   port: 8080
 
@@ -1794,134 +492,7 @@ After analyzing the user stories, I've identified several areas that need enhanc
 Updated Domain Layer
 User Domain (Enhanced)
 
-    
-// src/main/java/com/pokerapp/domain/user/User.java
-package com.pokerapp.domain.user;
 
-import lombok.Data;
-import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
-
-@Data
-@Entity
-@Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED)
-public abstract class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(unique = true)
-    private String username;
-    
-    private String password;
-    
-    @Column(unique = true)
-    private String email;
-    
-    private Double balance = 100.0; // Default starting balance
-    
-    @Lob
-    private byte[] avatar;
-    
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles")
-    @Column(name = "role")
-    private Set<String> roles = new HashSet<>();
-    
-    @Version
-    private Long version;
-    
-    public void addRole(String role) {
-        roles.add(role);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/user/Player.java
-package com.pokerapp.domain.user;
-
-import com.pokerapp.domain.game.Move;
-import com.pokerapp.domain.card.Hand;
-import lombok.Data;
-import javax.persistence.*;
-
-@Data
-@Entity
-@Table(name = "players")
-public class Player extends User {
-    private Double chips = 0.0;
-    
-    @Enumerated(EnumType.STRING)
-    private PlayerStatus status = PlayerStatus.SITTING_OUT;
-    
-    @OneToOne(cascade = CascadeType.ALL)
-    private Hand hand;
-    
-    // Track which table the player is currently at
-    @Column(name = "current_table_id")
-    private Long currentTableId;
-    
-    public void makeMove(Move move) {
-        // Logic for processing a player's move
-    }
-    
-    public void rebuy(Double amount) {
-        if (amount <= this.getBalance()) {
-            this.setChips(this.getChips() + amount);
-            this.setBalance(this.getBalance() - amount);
-        } else {
-            throw new IllegalArgumentException("Insufficient balance for rebuy");
-        }
-    }
-    
-    public void leaveTable(Double remainingChips) {
-        // Return chips to balance
-        this.setBalance(this.getBalance() + remainingChips);
-        this.setChips(0.0);
-        this.setCurrentTableId(null);
-        this.setStatus(PlayerStatus.SITTING_OUT);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/domain/user/Spectator.java
-package com.pokerapp.domain.user;
-
-import com.pokerapp.domain.game.Game;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.Map;
-import java.util.HashMap;
-
-@Data
-@Entity
-@Table(name = "spectators")
-public class Spectator extends User {
-    
-    // Track which table the spectator is watching
-    @Column(name = "watching_table_id")
-    private Long watchingTableId;
-    
-    public Map<Player, Double> viewWinOdds() {
-        // Logic to calculate win odds
-        return new HashMap<>();
-    }
-    
-    public void watchReplay(Game game) {
-        // Logic for watching game replay
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Invitation Domain (New)
-
-    
 // src/main/java/com/pokerapp/domain/invitation/InvitationStatus.java
 package com.pokerapp.domain.invitation;
 
@@ -1931,159 +502,8 @@ public enum InvitationStatus {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
-// src/main/java/com/pokerapp/domain/invitation/Invitation.java
-package com.pokerapp.domain.invitation;
-
-import com.pokerapp.domain.user.User;
-import lombok.Data;
-import javax.persistence.*;
-import java.time.LocalDateTime;
-
-@Data
-@Entity
-@Table(name = "invitations")
-public class Invitation {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @ManyToOne
-    private User sender;
-    
-    @ManyToOne
-    private User recipient;
-    
-    @Column(name = "table_id")
-    private Long tableId;
-    
-    @Enumerated(EnumType.STRING)
-    private InvitationStatus status = InvitationStatus.PENDING;
-    
-    private LocalDateTime createdAt = LocalDateTime.now();
-    
-    private LocalDateTime expiresAt = LocalDateTime.now().plusDays(1);
-    
-    @Column(length = 500)
-    private String message;
-    
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Game Domain (Enhanced)
 
-    
-// src/main/java/com/pokerapp/domain/game/Table.java
-package com.pokerapp.domain.game;
-
-import com.pokerapp.domain.user.Player;
-import com.pokerapp.domain.user.Spectator;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-@Data
-@Entity
-@Table(name = "poker_tables")
-public class Table {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    private String name;
-    
-    private String description;
-    
-    private Integer maxPlayers;
-    
-    private Double minBuyIn;
-    
-    private Double maxBuyIn;
-    
-    private Boolean isPrivate = false;
-    
-    @ManyToOne
-    private Player owner;
-    
-    @OneToMany
-    private List<Player> players = new ArrayList<>();
-    
-    @ManyToMany
-    @JoinTable(
-        name = "table_spectators",
-        joinColumns = @JoinColumn(name = "table_id"),
-        inverseJoinColumns = @JoinColumn(name = "spectator_id")
-    )
-    private Set<Spectator> spectators = new HashSet<>();
-    
-    @OneToOne(cascade = CascadeType.ALL)
-    private Game currentGame;
-    
-    public Game startNewGame() {
-        Game game = new Game();
-        game.setTable(this);
-        game.setSmallBlind(minBuyIn / 100);
-        game.setBigBlind(minBuyIn / 50);
-        
-        currentGame = game;
-        game.start();
-        
-        return game;
-    }
-    
-    public boolean addPlayer(Player player, Double buyIn) {
-        if (players.size() >= maxPlayers) {
-            return false;
-        }
-        
-        if (buyIn < minBuyIn || buyIn > maxBuyIn) {
-            return false;
-        }
-        
-        if (buyIn > player.getBalance()) {
-            return false;
-        }
-        
-        player.setChips(buyIn);
-        player.setBalance(player.getBalance() - buyIn);
-        player.setCurrentTableId(this.id);
-        player.setStatus(PlayerStatus.ACTIVE);
-        players.add(player);
-        
-        return true;
-    }
-    
-    public boolean addSpectator(Spectator spectator) {
-        spectator.setWatchingTableId(this.id);
-        return spectators.add(spectator);
-    }
-    
-    public boolean removeSpectator(Spectator spectator) {
-        spectator.setWatchingTableId(null);
-        return spectators.remove(spectator);
-    }
-    
-    public boolean removePlayer(Player player) {
-        if (!players.contains(player)) {
-            return false;
-        }
-        
-        Double remainingChips = player.getChips();
-        player.leaveTable(remainingChips);
-        return players.remove(player);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Replay Domain (Enhanced)
-
-    
 // src/main/java/com/pokerapp/domain/replay/GameAction.java
 package com.pokerapp.domain.replay;
 
@@ -3516,7 +1936,7 @@ In my last message, I omitted several important classes that complete the poker 
 
 Missing DTOs
 
-    
+
 // src/main/java/com/pokerapp/api/dto/response/UserDto.java
 package com.pokerapp.api.dto.response;
 
@@ -3534,7 +1954,7 @@ public class UserDto {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/response/PlayerStateDto.java
 package com.pokerapp.api.dto.response;
 
@@ -3553,7 +1973,7 @@ public class PlayerStateDto {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/response/CardDto.java
 package com.pokerapp.api.dto.response;
 
@@ -3568,7 +1988,7 @@ public class CardDto {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/response/MessageDto.java
 package com.pokerapp.api.dto.response;
 
@@ -3585,7 +2005,7 @@ public class MessageDto {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Missing Service Interfaces & Implementations
 
-    
+
 // src/main/java/com/pokerapp/service/impl/HandEvaluationServiceImpl.java
 package com.pokerapp.service.impl;
 
@@ -3629,211 +2049,35 @@ public class HandEvaluationServiceImpl implements HandEvaluationService {
                 ));
 
         Map<Player, Integer> rankings = handEvaluator.compareHands(playerHands, gameRound.getCommunityCards());
-        
+
         // Find the highest rank (lowest number = best hand)
         int bestRank = rankings.values().stream()
                 .min(Integer::compareTo)
                 .orElse(Integer.MAX_VALUE);
-        
+
         // Find all players with the best rank
         List<Player> winners = rankings.entrySet().stream()
                 .filter(entry -> entry.getValue() == bestRank)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
-        
+
         // Calculate prize distribution
         double totalPot = gameRound.getPot();
         double prizePerWinner = totalPot / winners.size();
-        
+
         Map<Player, Double> winnings = new HashMap<>();
         for (Player winner : winners) {
             winnings.put(winner, prizePerWinner);
         }
-        
+
         return winnings;
     }
 }
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
 Missing Security Classes
 
-    
-// src/main/java/com/pokerapp/security/JwtTokenProvider.java
-package com.pokerapp.security;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
-
-import java.util.Date;
-import java.util.function.Function;
-
-@Component
-public class JwtTokenProvider {
-
-    @Value("${app.jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${app.jwt.expirationMs}")
-    private long jwtExpirationMs;
-
-    public String generateToken(Authentication authentication) {
-        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
-        
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
-        
-        return Jwts.builder()
-                .setSubject(userPrincipal.getUsername())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, jwtSecret)
-                .compact();
-    }
-
-    public String getUsernameFromToken(String token) {
-        return getClaimFromToken(token, Claims::getSubject);
-    }
-
-    public Date getExpirationDateFromToken(String token) {
-        return getClaimFromToken(token, Claims::getExpiration);
-    }
-
-    private <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = getAllClaimsFromToken(token);
-        return claimsResolver.apply(claims);
-    }
-
-    private Claims getAllClaimsFromToken(String token) {
-        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
-    }
-
-    public boolean validateToken(String token, UserDetails userDetails) {
-        final String username = getUsernameFromToken(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
-
-    private Boolean isTokenExpired(String token) {
-        final Date expiration = getExpirationDateFromToken(token);
-        return expiration.before(new Date());
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/security/JwtAuthenticationFilter.java
-package com.pokerapp.security;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-@Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    @Autowired
-    private JwtTokenProvider tokenProvider;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
-            throws ServletException, IOException {
-        try {
-            String jwt = getJwtFromRequest(request);
-
-            if (StringUtils.hasText(jwt)) {
-                String username = tokenProvider.getUsernameFromToken(jwt);
-
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                
-                if (tokenProvider.validateToken(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            }
-        } catch (Exception ex) {
-            logger.error("Could not set user authentication in security context", ex);
-        }
-
-        filterChain.doFilter(request, response);
-    }
-
-    private String getJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-
-    
-// src/main/java/com/pokerapp/security/UserDetailsServiceImpl.java
-package com.pokerapp.security;
-
-import com.pokerapp.domain.user.User;
-import com.pokerapp.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
-
-import java.util.Set;
-import java.util.stream.Collectors;
-
-@Service
-public class UserDetailsServiceImpl implements UserDetailsService {
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-
-        Set<SimpleGrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .collect(Collectors.toSet());
-
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                authorities
-        );
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Missing Exception Classes
-
-    
 // src/main/java/com/pokerapp/exception/NotFoundException.java
 package com.pokerapp.exception;
 
@@ -3849,7 +2093,7 @@ public class NotFoundException extends RuntimeException {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/exception/InvalidMoveException.java
 package com.pokerapp.exception;
 
@@ -3865,7 +2109,7 @@ public class InvalidMoveException extends RuntimeException {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/exception/GlobalExceptionHandler.java
 package com.pokerapp.exception;
 
@@ -3891,7 +2135,7 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.NOT_FOUND.value());
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false));
-        
+
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
@@ -3902,7 +2146,7 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false));
-        
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
@@ -3913,7 +2157,7 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("message", ex.getMessage());
         body.put("path", request.getDescription(false));
-        
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
@@ -3922,17 +2166,17 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", new Date());
         body.put("status", HttpStatus.BAD_REQUEST.value());
-        
+
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
+
         body.put("errors", errors);
         body.put("path", request.getDescription(false));
-        
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 }
@@ -3940,7 +2184,7 @@ public class GlobalExceptionHandler {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 WebSocket Controller
 
-    
+
 // src/main/java/com/pokerapp/api/websocket/WebSocketController.java
 package com.pokerapp.api.websocket;
 
@@ -3972,37 +2216,37 @@ public class WebSocketController {
             @DestinationVariable Long gameId,
             MoveDto moveDto,
             SimpMessageHeaderAccessor headerAccessor) {
-            
+
         Principal principal = headerAccessor.getUser();
         Long playerId = Long.parseLong(principal.getName());
-        
+
         return gameService.makeMove(gameId, playerId, moveDto);
     }
-    
+
     @MessageMapping("/games/{gameId}/chat")
     @SendTo("/topic/games/{gameId}/chat")
     public MessageDto processChat(
             @DestinationVariable Long gameId,
             ChatMessageDto chatMessageDto,
             SimpMessageHeaderAccessor headerAccessor) {
-            
+
         Principal principal = headerAccessor.getUser();
         Long playerId = Long.parseLong(principal.getName());
-        
+
         // Create and return a message DTO
         MessageDto messageDto = new MessageDto();
         messageDto.setType("CHAT");
         messageDto.setContent(chatMessageDto.getMessage());
         messageDto.setPlayerId(playerId);
         messageDto.setTimestamp(System.currentTimeMillis());
-        
+
         return messageDto;
     }
 }
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/dto/request/ChatMessageDto.java
 package com.pokerapp.api.dto.request;
 
@@ -4016,29 +2260,6 @@ public class ChatMessageDto {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Main Application Class
 
-    
-// src/main/java/com/pokerapp/PokerApplication.java
-package com.pokerapp;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-import org.springframework.scheduling.annotation.EnableScheduling;
-
-@SpringBootApplication
-@EnableJpaAuditing
-@EnableScheduling
-public class PokerApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(PokerApplication.class, args);
-    }
-}
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
-Utils
-
-    
 // src/main/java/com/pokerapp/util/CardUtils.java
 package com.pokerapp.util;
 
@@ -4058,34 +2279,34 @@ public class CardUtils {
                 .sorted(Comparator.comparing(card -> card.getRank().getValue()))
                 .collect(Collectors.toList());
     }
-    
+
     public static boolean isStraight(List<Card> cards) {
         List<Card> sortedCards = sortByRank(cards);
-        
+
         // Check for A-2-3-4-5 straight
         boolean lowStraight = sortedCards.stream()
                 .map(card -> card.getRank())
                 .collect(Collectors.toSet())
                 .containsAll(List.of(Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE));
-                
+
         if (lowStraight) return true;
-        
+
         // Check normal straight
         for (int i = 0; i < sortedCards.size() - 1; i++) {
-            if (sortedCards.get(i + 1).getRank().getValue() - 
+            if (sortedCards.get(i + 1).getRank().getValue() -
                 sortedCards.get(i).getRank().getValue() != 1) {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     public static boolean isFlush(List<Card> cards) {
         Suit firstSuit = cards.get(0).getSuit();
         return cards.stream().allMatch(card -> card.getSuit() == firstSuit);
     }
-    
+
     public static Map<Rank, Long> getRankFrequency(List<Card> cards) {
         return cards.stream()
                 .collect(Collectors.groupingBy(Card::getRank, Collectors.counting()));
@@ -4106,7 +2327,7 @@ Claude V3.7 Sonnet-high
 Complete Poker Project Implementation
 Application Entry Point
 
-    
+
 // src/main/java/com/pokerapp/PokerApplication.java
 package com.pokerapp;
 
@@ -4127,7 +2348,7 @@ public class PokerApplication {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Configuration
 
-    
+
 // src/main/java/com/pokerapp/config/SecurityConfig.java
 package com.pokerapp.config;
 
@@ -4173,7 +2394,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .authorizeRequests()
             .antMatchers("/api/users/register", "/api/users/login").permitAll()
             .anyRequest().authenticated();
-            
+
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     }
 
@@ -4191,7 +2412,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/config/WebSocketConfig.java
 package com.pokerapp.config;
 
@@ -4221,7 +2442,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/config/ApplicationConfig.java
 package com.pokerapp.config;
 
@@ -4241,7 +2462,7 @@ public class ApplicationConfig {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Security Classes
 
-    
+
 // src/main/java/com/pokerapp/security/JwtTokenProvider.java
 package com.pokerapp.security;
 
@@ -4267,10 +2488,10 @@ public class JwtTokenProvider {
 
     public String generateToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
-        
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
-        
+
         return Jwts.builder()
                 .setSubject(userPrincipal.getUsername())
                 .setIssuedAt(now)
@@ -4309,7 +2530,7 @@ public class JwtTokenProvider {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/security/JwtAuthenticationFilter.java
 package com.pokerapp.security;
 
@@ -4339,7 +2560,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
@@ -4348,7 +2569,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = tokenProvider.getUsernameFromToken(jwt);
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                
+
                 if (tokenProvider.validateToken(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
@@ -4375,7 +2596,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/security/UserDetailsServiceImpl.java
 package com.pokerapp.security;
 
@@ -4418,7 +2639,7 @@ For code that is intended to be used in Siemens products or services, the code g
 Domain Model
 User Domain
 
-    
+
 // src/main/java/com/pokerapp/domain/user/User.java
 package com.pokerapp.domain.user;
 
@@ -4435,28 +2656,28 @@ public abstract class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(unique = true)
     private String username;
-    
+
     private String password;
-    
+
     @Column(unique = true)
     private String email;
-    
+
     private Double balance = 100.0; // Default starting balance
-    
+
     @Lob
     private byte[] avatar;
-    
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles")
     @Column(name = "role")
     private Set<String> roles = new HashSet<>();
-    
+
     @Version
     private Long version;
-    
+
     public void addRole(String role) {
         roles.add(role);
     }
@@ -4464,7 +2685,7 @@ public abstract class User {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/user/Player.java
 package com.pokerapp.domain.user;
 
@@ -4478,20 +2699,20 @@ import javax.persistence.*;
 @Table(name = "players")
 public class Player extends User {
     private Double chips = 0.0;
-    
+
     @Enumerated(EnumType.STRING)
     private PlayerStatus status = PlayerStatus.SITTING_OUT;
-    
+
     @OneToOne(cascade = CascadeType.ALL)
     private Hand hand;
-    
+
     @Column(name = "current_table_id")
     private Long currentTableId;
-    
+
     public void makeMove(Move move) {
         // Logic for processing a player's move
     }
-    
+
     public void rebuy(Double amount) {
         if (amount <= this.getBalance()) {
             this.setChips(this.getChips() + amount);
@@ -4500,7 +2721,7 @@ public class Player extends User {
             throw new IllegalArgumentException("Insufficient balance for rebuy");
         }
     }
-    
+
     public void leaveTable(Double remainingChips) {
         // Return chips to balance
         this.setBalance(this.getBalance() + remainingChips);
@@ -4512,7 +2733,7 @@ public class Player extends User {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/user/Spectator.java
 package com.pokerapp.domain.user;
 
@@ -4526,15 +2747,15 @@ import java.util.HashMap;
 @Entity
 @Table(name = "spectators")
 public class Spectator extends User {
-    
+
     @Column(name = "watching_table_id")
     private Long watchingTableId;
-    
+
     public Map<Player, Double> viewWinOdds() {
         // Logic to calculate win odds
         return new HashMap<>();
     }
-    
+
     public void watchReplay(Game game) {
         // Logic for watching game replay
     }
@@ -4542,7 +2763,7 @@ public class Spectator extends User {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/user/PlayerStatus.java
 package com.pokerapp.domain.user;
 
@@ -4553,7 +2774,7 @@ public enum PlayerStatus {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Card Domain
 
-    
+
 // src/main/java/com/pokerapp/domain/card/Suit.java
 package com.pokerapp.domain.card;
 
@@ -4563,7 +2784,7 @@ public enum Suit {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/card/Rank.java
 package com.pokerapp.domain.card;
 
@@ -4581,13 +2802,13 @@ public enum Rank {
     QUEEN(12),
     KING(13),
     ACE(14);
-    
+
     private final int value;
-    
+
     Rank(int value) {
         this.value = value;
     }
-    
+
     public int getValue() {
         return value;
     }
@@ -4595,7 +2816,7 @@ public enum Rank {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/card/Card.java
 package com.pokerapp.domain.card;
 
@@ -4609,15 +2830,15 @@ public class Card {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Enumerated(EnumType.STRING)
     private Suit suit;
-    
+
     @Enumerated(EnumType.STRING)
     private Rank rank;
-    
+
     private boolean isShowing;
-    
+
     @Override
     public String toString() {
         return rank + " of " + suit;
@@ -4626,7 +2847,7 @@ public class Card {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/card/Hand.java
 package com.pokerapp.domain.card;
 
@@ -4642,14 +2863,14 @@ public class Hand {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Card> cards = new ArrayList<>();
-    
+
     public void addCard(Card card) {
         cards.add(card);
     }
-    
+
     public void clear() {
         cards.clear();
     }
@@ -4657,7 +2878,7 @@ public class Hand {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/card/Deck.java
 package com.pokerapp.domain.card;
 
@@ -4674,10 +2895,10 @@ public class Deck {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Card> cards = new ArrayList<>();
-    
+
     @PostLoad
     public void initialize() {
         if (cards.isEmpty()) {
@@ -4693,11 +2914,11 @@ public class Deck {
             shuffle();
         }
     }
-    
+
     public void shuffle() {
         Collections.shuffle(cards);
     }
-    
+
     public Card drawCard() {
         if (cards.isEmpty()) {
             throw new IllegalStateException("Deck is empty");
@@ -4709,7 +2930,7 @@ public class Deck {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Game Domain
 
-    
+
 // src/main/java/com/pokerapp/domain/game/MoveType.java
 package com.pokerapp.domain.game;
 
@@ -4719,7 +2940,7 @@ public enum MoveType {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/Move.java
 package com.pokerapp.domain.game;
 
@@ -4734,24 +2955,24 @@ public class Move {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Enumerated(EnumType.STRING)
     private MoveType type;
-    
+
     private Double amount;
-    
+
     @ManyToOne
     private Player player;
-    
+
     @ManyToOne
     private BettingRound bettingRound;
-    
+
     private Long timestamp = System.currentTimeMillis();
 }
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/BettingStage.java
 package com.pokerapp.domain.game;
 
@@ -4761,7 +2982,7 @@ public enum BettingStage {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/BettingRound.java
 package com.pokerapp.domain.game;
 
@@ -4778,28 +2999,28 @@ public class BettingRound {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Enumerated(EnumType.STRING)
     private BettingStage stage;
-    
+
     private Double currentBet;
-    
+
     @ManyToOne
     private GameRound gameRound;
-    
+
     @OneToMany(mappedBy = "bettingRound", cascade = CascadeType.ALL)
     private List<Move> moves = new ArrayList<>();
-    
+
     @Transient
     private int currentPlayerIndex;
-    
+
     public void processMove(Player player, Move move) {
         // Logic to process a player's move
         move.setPlayer(player);
         move.setBettingRound(this);
         moves.add(move);
     }
-    
+
     public Player getNextPlayer() {
         // Logic to determine the next player
         return null; // Placeholder
@@ -4808,7 +3029,7 @@ public class BettingRound {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/GameStatus.java
 package com.pokerapp.domain.game;
 
@@ -4818,7 +3039,7 @@ public enum GameStatus {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/GameRound.java
 package com.pokerapp.domain.game;
 
@@ -4835,23 +3056,23 @@ public class GameRound {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private Integer roundNumber;
-    
+
     private Double pot = 0.0;
-    
+
     @OneToMany(cascade = CascadeType.ALL)
     private List<Card> communityCards = new ArrayList<>();
-    
+
     @OneToMany(mappedBy = "gameRound", cascade = CascadeType.ALL)
     private List<BettingRound> bettingRounds = new ArrayList<>();
-    
+
     @ManyToOne
     private Game game;
-    
+
     @OneToOne
     private BettingRound currentBettingRound;
-    
+
     public void dealCommunityCards(int count) {
         for (int i = 0; i < count; i++) {
             Card card = game.getDeck().drawCard();
@@ -4859,10 +3080,10 @@ public class GameRound {
             communityCards.add(card);
         }
     }
-    
+
     public void advanceToNextBettingRound() {
         BettingStage nextStage;
-        
+
         if (currentBettingRound == null) {
             nextStage = BettingStage.PREFLOP;
         } else {
@@ -4883,12 +3104,12 @@ public class GameRound {
                     return;
             }
         }
-        
+
         BettingRound newRound = new BettingRound();
         newRound.setStage(nextStage);
         newRound.setCurrentBet(0.0);
         newRound.setGameRound(this);
-        
+
         bettingRounds.add(newRound);
         currentBettingRound = newRound;
     }
@@ -4896,7 +3117,7 @@ public class GameRound {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/Game.java
 package com.pokerapp.domain.game;
 
@@ -4915,53 +3136,53 @@ public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private Double smallBlind;
-    
+
     private Double bigBlind;
-    
+
     private Integer dealerPosition = 0;
-    
+
     @Enumerated(EnumType.STRING)
     private GameStatus status = GameStatus.WAITING;
-    
+
     @ManyToOne
     private Table table;
-    
+
     @OneToOne(cascade = CascadeType.ALL)
     private Deck deck = new Deck();
-    
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
     private List<GameRound> gameRounds = new ArrayList<>();
-    
+
     @OneToOne
     private GameRound currentRound;
-    
+
     public void start() {
         if (status != GameStatus.WAITING) {
             throw new IllegalStateException("Game already started");
         }
-        
+
         status = GameStatus.STARTING;
         deck.initialize();
         deck.shuffle();
-        
+
         // Deal cards to players
         dealPlayerCards();
-        
+
         // Create first round
         GameRound firstRound = new GameRound();
         firstRound.setRoundNumber(1);
         firstRound.setGame(this);
         gameRounds.add(firstRound);
         currentRound = firstRound;
-        
+
         // Start with preflop betting
         currentRound.advanceToNextBettingRound();
-        
+
         status = GameStatus.IN_PROGRESS;
     }
-    
+
     private void dealPlayerCards() {
         for (Player player : table.getPlayers()) {
             if (player.getHand() == null) {
@@ -4969,13 +3190,13 @@ public class Game {
             } else {
                 player.getHand().clear();
             }
-            
+
             // Each player gets 2 cards
             player.getHand().addCard(deck.drawCard());
             player.getHand().addCard(deck.drawCard());
         }
     }
-    
+
     public List<Player> determineWinner() {
         // Implement winner determination logic using HandEvaluator
         return new ArrayList<>(); // Placeholder
@@ -4984,7 +3205,7 @@ public class Game {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/game/Table.java
 package com.pokerapp.domain.game;
 
@@ -5005,25 +3226,25 @@ public class Table {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String name;
-    
+
     private String description;
-    
+
     private Integer maxPlayers;
-    
+
     private Double minBuyIn;
-    
+
     private Double maxBuyIn;
-    
+
     private Boolean isPrivate = false;
-    
+
     @ManyToOne
     private Player owner;
-    
+
     @OneToMany
     private List<Player> players = new ArrayList<>();
-    
+
     @ManyToMany
     @JoinTable(
         name = "table_spectators",
@@ -5031,59 +3252,59 @@ public class Table {
         inverseJoinColumns = @JoinColumn(name = "spectator_id")
     )
     private Set<Spectator> spectators = new HashSet<>();
-    
+
     @OneToOne(cascade = CascadeType.ALL)
     private Game currentGame;
-    
+
     public Game startNewGame() {
         Game game = new Game();
         game.setTable(this);
         game.setSmallBlind(minBuyIn / 100);
         game.setBigBlind(minBuyIn / 50);
-        
+
         currentGame = game;
         game.start();
-        
+
         return game;
     }
-    
+
     public boolean addPlayer(Player player, Double buyIn) {
         if (players.size() >= maxPlayers) {
             return false;
         }
-        
+
         if (buyIn < minBuyIn || buyIn > maxBuyIn) {
             return false;
         }
-        
+
         if (buyIn > player.getBalance()) {
             return false;
         }
-        
+
         player.setChips(buyIn);
         player.setBalance(player.getBalance() - buyIn);
         player.setCurrentTableId(this.id);
         player.setStatus(PlayerStatus.ACTIVE);
         players.add(player);
-        
+
         return true;
     }
-    
+
     public boolean addSpectator(Spectator spectator) {
         spectator.setWatchingTableId(this.id);
         return spectators.add(spectator);
     }
-    
+
     public boolean removeSpectator(Spectator spectator) {
         spectator.setWatchingTableId(null);
         return spectators.remove(spectator);
     }
-    
+
     public boolean removePlayer(Player player) {
         if (!players.contains(player)) {
             return false;
         }
-        
+
         Double remainingChips = player.getChips();
         player.leaveTable(remainingChips);
         return players.remove(player);
@@ -5093,7 +3314,7 @@ public class Table {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Invitation Domain
 
-    
+
 // src/main/java/com/pokerapp/domain/invitation/InvitationStatus.java
 package com.pokerapp.domain.invitation;
 
@@ -5103,7 +3324,7 @@ public enum InvitationStatus {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/invitation/Invitation.java
 package com.pokerapp.domain.invitation;
 
@@ -5119,26 +3340,26 @@ public class Invitation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne
     private User sender;
-    
+
     @ManyToOne
     private User recipient;
-    
+
     @Column(name = "table_id")
     private Long tableId;
-    
+
     @Enumerated(EnumType.STRING)
     private InvitationStatus status = InvitationStatus.PENDING;
-    
+
     private LocalDateTime createdAt = LocalDateTime.now();
-    
+
     private LocalDateTime expiresAt = LocalDateTime.now().plusDays(1);
-    
+
     @Column(length = 500)
     private String message;
-    
+
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }
@@ -5147,7 +3368,7 @@ public class Invitation {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Poker Domain
 
-    
+
 // src/main/java/com/pokerapp/domain/poker/HandRank.java
 package com.pokerapp.domain.poker;
 
@@ -5162,13 +3383,13 @@ public enum HandRank {
     FOUR_OF_A_KIND(8),
     STRAIGHT_FLUSH(9),
     ROYAL_FLUSH(10);
-    
+
     private final int value;
-    
+
     HandRank(int value) {
         this.value = value;
     }
-    
+
     public int getValue() {
         return value;
     }
@@ -5176,7 +3397,7 @@ public enum HandRank {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/poker/HandEvaluator.java
 package com.pokerapp.domain.poker;
 
@@ -5185,11 +3406,11 @@ import com.pokerapp.domain.user.Player;
 import java.util.*;
 
 public class HandEvaluator {
-    
+
     public HandRank evaluateHand(List<Card> hand, List<Card> communityCards) {
         List<Card> allCards = new ArrayList<>(hand);
         allCards.addAll(communityCards);
-        
+
         if (isRoyalFlush(allCards)) return HandRank.ROYAL_FLUSH;
         if (isStraightFlush(allCards)) return HandRank.STRAIGHT_FLUSH;
         if (isFourOfAKind(allCards)) return HandRank.FOUR_OF_A_KIND;
@@ -5199,57 +3420,57 @@ public class HandEvaluator {
         if (isThreeOfAKind(allCards)) return HandRank.THREE_OF_A_KIND;
         if (isTwoPair(allCards)) return HandRank.TWO_PAIR;
         if (isPair(allCards)) return HandRank.PAIR;
-        
+
         return HandRank.HIGH_CARD;
     }
-    
+
     public Map<Player, Integer> compareHands(Map<Player, List<Card>> playerHands, List<Card> communityCards) {
         Map<Player, Integer> rankings = new HashMap<>();
         // Implementation for comparing hands and assigning ranks
         return rankings;
     }
-    
+
     // Implementation for hand evaluation methods
     private boolean isRoyalFlush(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isStraightFlush(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isFourOfAKind(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isFullHouse(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isFlush(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isStraight(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isThreeOfAKind(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isTwoPair(List<Card> cards) {
         // Implementation
         return false;
     }
-    
+
     private boolean isPair(List<Card> cards) {
         // Implementation
         return false;
@@ -5259,38 +3480,6 @@ public class HandEvaluator {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Statistics Domain
 
-    
-// src/main/java/com/pokerapp/domain/statistics/GameResult.java
-package com.pokerapp.domain.statistics;
-
-import com.pokerapp.domain.game.Game;
-import com.pokerapp.domain.user.Player;
-import lombok.Data;
-import javax.persistence.*;
-import java.util.HashMap;
-import java.util.Map;
-
-@Data
-@Entity
-@Table(name = "game_results")
-public class GameResult {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @ManyToOne
-    private Game game;
-    
-    @ElementCollection
-    @CollectionTable(name = "player_winnings", 
-                   joinColumns = @JoinColumn(name = "result_id"))
-    @MapKeyJoinColumn(name = "player_id")
-    @Column(name = "amount")
-    private Map<Player, Double> winnings = new HashMap<>();
-    
-    private Long timestamp =
-ⓘ
-For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
 
 
@@ -5299,7 +3488,7 @@ Claude V3.7 Sonnet-high
 Complete Poker Project Implementation - Continued
 Statistics Domain (continued)
 
-    
+
 // src/main/java/com/pokerapp/domain/statistics/GameResult.java
 package com.pokerapp.domain.statistics;
 
@@ -5317,23 +3506,23 @@ public class GameResult {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne
     private Game game;
-    
+
     @ElementCollection
-    @CollectionTable(name = "player_winnings", 
+    @CollectionTable(name = "player_winnings",
                    joinColumns = @JoinColumn(name = "result_id"))
     @MapKeyJoinColumn(name = "player_id")
     @Column(name = "amount")
     private Map<Player, Double> winnings = new HashMap<>();
-    
+
     private Long timestamp = System.currentTimeMillis();
 }
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/domain/statistics/Statistics.java
 package com.pokerapp.domain.statistics;
 
@@ -5348,26 +3537,26 @@ public class Statistics {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @OneToOne
     private User user;
-    
+
     private Integer gamesPlayed = 0;
-    
+
     private Integer gamesWon = 0;
-    
+
     private Double winRate = 0.0;
-    
+
     private Double totalWinnings = 0.0;
-    
+
     public void updateStats(GameResult gameResult) {
         Double winnings = gameResult.getWinnings().getOrDefault(user, 0.0);
         gamesPlayed++;
-        
+
         if (winnings > 0) {
             gamesWon++;
         }
-        
+
         totalWinnings += winnings;
         winRate = (double) gamesWon / gamesPlayed;
     }
@@ -5376,7 +3565,7 @@ public class Statistics {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 StatisticsRepository Interface
 
-    
+
 // src/main/java/com/pokerapp/repository/StatisticsRepository.java
 package com.pokerapp.repository;
 
@@ -5392,7 +3581,7 @@ public interface StatisticsRepository extends JpaRepository<Statistics, Long> {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 StatisticsService Interface and Implementation
 
-    
+
 // src/main/java/com/pokerapp/service/StatisticsService.java
 package com.pokerapp.service;
 
@@ -5411,7 +3600,7 @@ public interface StatisticsService {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/service/impl/StatisticsServiceImpl.java
 package com.pokerapp.service.impl;
 
@@ -5453,7 +3642,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                     newStats.setUser(user);
                     return statisticsRepository.save(newStats);
                 });
-                
+
         return convertToDto(statistics);
     }
 
@@ -5462,13 +3651,13 @@ public class StatisticsServiceImpl implements StatisticsService {
     public GameResult recordGameResult(Game game, Map<User, Double> winnings) {
         GameResult gameResult = new GameResult();
         gameResult.setGame(game);
-        
+
         winnings.forEach((user, amount) -> {
             if (user instanceof com.pokerapp.domain.user.Player) {
                 gameResult.getWinnings().put((com.pokerapp.domain.user.Player) user, amount);
             }
         });
-        
+
         return gameResult;
     }
 
@@ -5482,12 +3671,12 @@ public class StatisticsServiceImpl implements StatisticsService {
                         newStats.setUser(player);
                         return newStats;
                     });
-                    
+
             statistics.updateStats(gameResult);
             statisticsRepository.save(statistics);
         });
     }
-    
+
     private StatisticsDto convertToDto(Statistics statistics) {
         StatisticsDto dto = new StatisticsDto();
         dto.setUserId(statistics.getUser().getId());
@@ -5503,7 +3692,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 Statistics Controller and DTO
 
-    
+
 // src/main/java/com/pokerapp/api/dto/response/StatisticsDto.java
 package com.pokerapp.api.dto.response;
 
@@ -5521,7 +3710,7 @@ public class StatisticsDto {
 ⓘ
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 
-    
+
 // src/main/java/com/pokerapp/api/controller/StatisticsController.java
 package com.pokerapp.api.controller;
 
@@ -5560,7 +3749,7 @@ public class StatisticsController {
 For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
 GameResult Repository
 
-    
+
 // src/main/java/com/pokerapp/repository/GameResultRepository.java
 package com.pokerapp.repository;
 
@@ -5578,47 +3767,47 @@ Integration of Statistics Service with Game Service
 Enhancing the GameServiceImpl class:
 
 
-    
+
 // Updated portion of GameServiceImpl.java with statistics integration
 @Override
 @Transactional
 public Game endGame(Long gameId) {
     Game game = gameRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Game not found"));
-            
+
     List<Player> winners = game.determineWinner();
-    
+
     // Distribute pot to winners and record for statistics
     Map<User, Double> winnings = new HashMap<>();
-    
+
     if (!winners.isEmpty()) {
         GameRound round = game.getCurrentRound();
         double potPerWinner = round.getPot() / winners.size();
-        
+
         for (Player winner : winners) {
             winner.setChips(winner.getChips() + potPerWinner);
             playerRepository.save(winner);
             winnings.put(winner, potPerWinner);
         }
     }
-    
+
     // Record all participants with zero winnings if they didn't win
     for (Player player : game.getTable().getPlayers()) {
         if (!winners.contains(player)) {
             winnings.put(player, 0.0);
         }
     }
-    
+
     // Record game results for statistics
     GameResult gameResult = statisticsService.recordGameResult(game, winnings);
     statisticsService.updateUserStatistics(gameResult);
-    
+
     game.setStatus(GameStatus.FINISHED);
     Game savedGame = gameRepository.save(game);
-    
+
     // Complete the replay
     replayService.completeReplay(game.getId());
-    
+
     return savedGame;
 }
 ⓘ
