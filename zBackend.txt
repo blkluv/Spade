@@ -1,0 +1,1718 @@
+Enhanced Poker Project Implementation
+After analyzing the user stories, I've identified several areas that need enhancement or addition in the implementation. Let me address each requirement and provide the updated project structure.
+
+Updated Domain Layer
+User Domain (Enhanced)
+
+    
+// src/main/java/com/pokerapp/domain/user/User.java
+package com.pokerapp.domain.user;
+
+import lombok.Data;
+import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
+
+@Data
+@Entity
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(unique = true)
+    private String username;
+    
+    private String password;
+    
+    @Column(unique = true)
+    private String email;
+    
+    private Double balance = 100.0; // Default starting balance
+    
+    @Lob
+    private byte[] avatar;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles")
+    @Column(name = "role")
+    private Set<String> roles = new HashSet<>();
+    
+    @Version
+    private Long version;
+    
+    public void addRole(String role) {
+        roles.add(role);
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/domain/user/Player.java
+package com.pokerapp.domain.user;
+
+import com.pokerapp.domain.game.Move;
+import com.pokerapp.domain.card.Hand;
+import lombok.Data;
+import javax.persistence.*;
+
+@Data
+@Entity
+@Table(name = "players")
+public class Player extends User {
+    private Double chips = 0.0;
+    
+    @Enumerated(EnumType.STRING)
+    private PlayerStatus status = PlayerStatus.SITTING_OUT;
+    
+    @OneToOne(cascade = CascadeType.ALL)
+    private Hand hand;
+    
+    // Track which table the player is currently at
+    @Column(name = "current_table_id")
+    private Long currentTableId;
+    
+    public void makeMove(Move move) {
+        // Logic for processing a player's move
+    }
+    
+    public void rebuy(Double amount) {
+        if (amount <= this.getBalance()) {
+            this.setChips(this.getChips() + amount);
+            this.setBalance(this.getBalance() - amount);
+        } else {
+            throw new IllegalArgumentException("Insufficient balance for rebuy");
+        }
+    }
+    
+    public void leaveTable(Double remainingChips) {
+        // Return chips to balance
+        this.setBalance(this.getBalance() + remainingChips);
+        this.setChips(0.0);
+        this.setCurrentTableId(null);
+        this.setStatus(PlayerStatus.SITTING_OUT);
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/domain/user/Spectator.java
+package com.pokerapp.domain.user;
+
+import com.pokerapp.domain.game.Game;
+import lombok.Data;
+import javax.persistence.*;
+import java.util.Map;
+import java.util.HashMap;
+
+@Data
+@Entity
+@Table(name = "spectators")
+public class Spectator extends User {
+    
+    // Track which table the spectator is watching
+    @Column(name = "watching_table_id")
+    private Long watchingTableId;
+    
+    public Map<Player, Double> viewWinOdds() {
+        // Logic to calculate win odds
+        return new HashMap<>();
+    }
+    
+    public void watchReplay(Game game) {
+        // Logic for watching game replay
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+Invitation Domain (New)
+
+    
+// src/main/java/com/pokerapp/domain/invitation/InvitationStatus.java
+package com.pokerapp.domain.invitation;
+
+public enum InvitationStatus {
+    PENDING, ACCEPTED, DECLINED, EXPIRED
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/domain/invitation/Invitation.java
+package com.pokerapp.domain.invitation;
+
+import com.pokerapp.domain.user.User;
+import lombok.Data;
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@Table(name = "invitations")
+public class Invitation {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne
+    private User sender;
+    
+    @ManyToOne
+    private User recipient;
+    
+    @Column(name = "table_id")
+    private Long tableId;
+    
+    @Enumerated(EnumType.STRING)
+    private InvitationStatus status = InvitationStatus.PENDING;
+    
+    private LocalDateTime createdAt = LocalDateTime.now();
+    
+    private LocalDateTime expiresAt = LocalDateTime.now().plusDays(1);
+    
+    @Column(length = 500)
+    private String message;
+    
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(expiresAt);
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+Game Domain (Enhanced)
+
+    
+// src/main/java/com/pokerapp/domain/game/Table.java
+package com.pokerapp.domain.game;
+
+import com.pokerapp.domain.user.Player;
+import com.pokerapp.domain.user.Spectator;
+import lombok.Data;
+import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Data
+@Entity
+@Table(name = "poker_tables")
+public class Table {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    private String name;
+    
+    private String description;
+    
+    private Integer maxPlayers;
+    
+    private Double minBuyIn;
+    
+    private Double maxBuyIn;
+    
+    private Boolean isPrivate = false;
+    
+    @ManyToOne
+    private Player owner;
+    
+    @OneToMany
+    private List<Player> players = new ArrayList<>();
+    
+    @ManyToMany
+    @JoinTable(
+        name = "table_spectators",
+        joinColumns = @JoinColumn(name = "table_id"),
+        inverseJoinColumns = @JoinColumn(name = "spectator_id")
+    )
+    private Set<Spectator> spectators = new HashSet<>();
+    
+    @OneToOne(cascade = CascadeType.ALL)
+    private Game currentGame;
+    
+    public Game startNewGame() {
+        Game game = new Game();
+        game.setTable(this);
+        game.setSmallBlind(minBuyIn / 100);
+        game.setBigBlind(minBuyIn / 50);
+        
+        currentGame = game;
+        game.start();
+        
+        return game;
+    }
+    
+    public boolean addPlayer(Player player, Double buyIn) {
+        if (players.size() >= maxPlayers) {
+            return false;
+        }
+        
+        if (buyIn < minBuyIn || buyIn > maxBuyIn) {
+            return false;
+        }
+        
+        if (buyIn > player.getBalance()) {
+            return false;
+        }
+        
+        player.setChips(buyIn);
+        player.setBalance(player.getBalance() - buyIn);
+        player.setCurrentTableId(this.id);
+        player.setStatus(PlayerStatus.ACTIVE);
+        players.add(player);
+        
+        return true;
+    }
+    
+    public boolean addSpectator(Spectator spectator) {
+        spectator.setWatchingTableId(this.id);
+        return spectators.add(spectator);
+    }
+    
+    public boolean removeSpectator(Spectator spectator) {
+        spectator.setWatchingTableId(null);
+        return spectators.remove(spectator);
+    }
+    
+    public boolean removePlayer(Player player) {
+        if (!players.contains(player)) {
+            return false;
+        }
+        
+        Double remainingChips = player.getChips();
+        player.leaveTable(remainingChips);
+        return players.remove(player);
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+Replay Domain (Enhanced)
+
+    
+// src/main/java/com/pokerapp/domain/replay/GameAction.java
+package com.pokerapp.domain.replay;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.pokerapp.domain.game.Move;
+import com.pokerapp.domain.user.Player;
+import lombok.Data;
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@Table(name = "game_actions")
+public class GameAction {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne
+    private Player player;
+    
+    private String actionType;
+    
+    private String actionData;
+    
+    private LocalDateTime timestamp = LocalDateTime.now();
+    
+    private Integer sequenceNumber;
+    
+    @ManyToOne
+    @JsonIgnore
+    private Replay replay;
+    
+    public static GameAction fromMove(Move move, Integer sequenceNumber) {
+        GameAction action = new GameAction();
+        action.setPlayer(move.getPlayer());
+        action.setActionType("MOVE");
+        action.setActionData(move.getType() + ":" + move.getAmount());
+        action.setSequenceNumber(sequenceNumber);
+        return action;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/domain/replay/Replay.java
+package com.pokerapp.domain.replay;
+
+import com.pokerapp.domain.game.Game;
+import lombok.Data;
+import javax.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@Entity
+@Table(name = "replays")
+public class Replay {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @OneToOne
+    private Game game;
+    
+    private LocalDateTime startTime = LocalDateTime.now();
+    
+    private LocalDateTime endTime;
+    
+    private Integer actionCounter = 0;
+    
+    @OneToMany(mappedBy = "replay", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OrderBy("sequenceNumber ASC")
+    private List<GameAction> actions = new ArrayList<>();
+    
+    public void recordAction(GameAction action) {
+        action.setReplay(this);
+        action.setSequenceNumber(++actionCounter);
+        actions.add(action);
+    }
+    
+    public void completeReplay() {
+        this.endTime = LocalDateTime.now();
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+Repository Layer (Enhanced)
+
+    
+// src/main/java/com/pokerapp/repository/SpectatorRepository.java
+package com.pokerapp.repository;
+
+import com.pokerapp.domain.user.Spectator;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface SpectatorRepository extends JpaRepository<Spectator, Long> {
+    List<Spectator> findByWatchingTableId(Long tableId);
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/repository/InvitationRepository.java
+package com.pokerapp.repository;
+
+import com.pokerapp.domain.invitation.Invitation;
+import com.pokerapp.domain.invitation.InvitationStatus;
+import com.pokerapp.domain.user.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface InvitationRepository extends JpaRepository<Invitation, Long> {
+    List<Invitation> findByRecipientAndStatus(User recipient, InvitationStatus status);
+    List<Invitation> findBySenderAndStatus(User sender, InvitationStatus status);
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+Service Layer (Enhanced)
+
+    
+// src/main/java/com/pokerapp/service/TableService.java
+package com.pokerapp.service;
+
+import com.pokerapp.api.dto.request.TableSettingsDto;
+import com.pokerapp.api.dto.response.TableDto;
+import com.pokerapp.domain.game.Table;
+import com.pokerapp.domain.user.User;
+
+import java.util.List;
+
+public interface TableService {
+    Table createTable(TableSettingsDto settings, User owner);
+    Table getTableById(Long id);
+    List<TableDto> getAllTables();
+    List<TableDto> getPublicTables();
+    TableDto joinTable(Long tableId, Long userId, Double buyIn);
+    TableDto joinTableAsSpectator(Long tableId, Long userId);
+    TableDto leaveTable(Long tableId, Long userId);
+    TableDto removeSpectator(Long tableId, Long userId);
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/service/impl/TableServiceImpl.java
+package com.pokerapp.service.impl;
+
+import com.pokerapp.api.dto.request.TableSettingsDto;
+import com.pokerapp.api.dto.response.TableDto;
+import com.pokerapp.domain.game.Table;
+import com.pokerapp.domain.user.Player;
+import com.pokerapp.domain.user.Spectator;
+import com.pokerapp.domain.user.User;
+import com.pokerapp.exception.NotFoundException;
+import com.pokerapp.repository.PlayerRepository;
+import com.pokerapp.repository.SpectatorRepository;
+import com.pokerapp.repository.TableRepository;
+import com.pokerapp.service.TableService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class TableServiceImpl implements TableService {
+
+    private final TableRepository tableRepository;
+    private final PlayerRepository playerRepository;
+    private final SpectatorRepository spectatorRepository;
+
+    @Autowired
+    public TableServiceImpl(
+            TableRepository tableRepository,
+            PlayerRepository playerRepository,
+            SpectatorRepository spectatorRepository) {
+        this.tableRepository = tableRepository;
+        this.playerRepository = playerRepository;
+        this.spectatorRepository = spectatorRepository;
+    }
+
+    @Override
+    @Transactional
+    public Table createTable(TableSettingsDto settings, User owner) {
+        Player ownerAsPlayer = (Player) owner;
+        
+        Table table = new Table();
+        table.setName(settings.getName());
+        table.setDescription(settings.getDescription());
+        table.setMaxPlayers(settings.getMaxPlayers());
+        table.setMinBuyIn(settings.getMinBuyIn());
+        table.setMaxBuyIn(settings.getMaxBuyIn());
+        table.setIsPrivate(settings.getIsPrivate());
+        table.setOwner(ownerAsPlayer);
+        
+        return tableRepository.save(table);
+    }
+
+    @Override
+    public Table getTableById(Long id) {
+        return tableRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Table not found"));
+    }
+
+    @Override
+    public List<TableDto> getAllTables() {
+        return tableRepository.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TableDto> getPublicTables() {
+        return tableRepository.findAll().stream()
+                .filter(table -> !table.getIsPrivate())
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public TableDto joinTable(Long tableId, Long userId, Double buyIn) {
+        Table table = getTableById(tableId);
+        Player player = playerRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Player not found"));
+        
+        if (player.getCurrentTableId() != null) {
+            throw new IllegalStateException("Player is already at a table");
+        }
+        
+        boolean joined = table.addPlayer(player, buyIn);
+        if (!joined) {
+            throw new IllegalStateException("Could not join table");
+        }
+        
+        playerRepository.save(player);
+        table = tableRepository.save(table);
+        
+        return convertToDto(table);
+    }
+
+    @Override
+    @Transactional
+    public TableDto joinTableAsSpectator(Long tableId, Long userId) {
+        Table table = getTableById(tableId);
+        Spectator spectator = spectatorRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Spectator not found"));
+        
+        if (spectator.getWatchingTableId() != null) {
+            throw new IllegalStateException("Spectator is already watching a table");
+        }
+        
+        boolean added = table.addSpectator(spectator);
+        if (!added) {
+            throw new IllegalStateException("Could not join as spectator");
+        }
+        
+        spectatorRepository.save(spectator);
+        table = tableRepository.save(table);
+        
+        return convertToDto(table);
+    }
+
+    @Override
+    @Transactional
+    public TableDto leaveTable(Long tableId, Long userId) {
+        Table table = getTableById(tableId);
+        Player player = playerRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Player not found"));
+        
+        boolean removed = table.removePlayer(player);
+        if (!removed) {
+            throw new IllegalStateException("Player not at this table");
+        }
+        
+        playerRepository.save(player);
+        table = tableRepository.save(table);
+        
+        return convertToDto(table);
+    }
+
+    @Override
+    @Transactional
+    public TableDto removeSpectator(Long tableId, Long userId) {
+        Table table = getTableById(tableId);
+        Spectator spectator = spectatorRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Spectator not found"));
+        
+        boolean removed = table.removeSpectator(spectator);
+        if (!removed) {
+            throw new IllegalStateException("Spectator not watching this table");
+        }
+        
+        spectatorRepository.save(spectator);
+        table = tableRepository.save(table);
+        
+        return convertToDto(table);
+    }
+    
+    private TableDto convertToDto(Table table) {
+        TableDto dto = new TableDto();
+        dto.setId(table.getId());
+        dto.setName(table.getName());
+        dto.setDescription(table.getDescription());
+        dto.setMaxPlayers(table.getMaxPlayers());
+        dto.setCurrentPlayers(table.getPlayers().size());
+        dto.setMinBuyIn(table.getMinBuyIn());
+        dto.setMaxBuyIn(table.getMaxBuyIn());
+        dto.setIsPrivate(table.getIsPrivate());
+        dto.setOwnerId(table.getOwner().getId());
+        dto.setHasActiveGame(table.getCurrentGame() != null);
+        return dto;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/service/InvitationService.java
+package com.pokerapp.service;
+
+import com.pokerapp.api.dto.request.InvitationRequestDto;
+import com.pokerapp.api.dto.response.InvitationDto;
+import com.pokerapp.domain.invitation.Invitation;
+import com.pokerapp.domain.user.User;
+
+import java.util.List;
+
+public interface InvitationService {
+    Invitation createInvitation(InvitationRequestDto requestDto, User sender);
+    List<InvitationDto> getPendingInvitationsForUser(User user);
+    List<InvitationDto> getSentInvitationsForUser(User user);
+    InvitationDto acceptInvitation(Long invitationId, User user);
+    InvitationDto declineInvitation(Long invitationId, User user);
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/service/impl/InvitationServiceImpl.java
+package com.pokerapp.service.impl;
+
+import com.pokerapp.api.dto.request.InvitationRequestDto;
+import com.pokerapp.api.dto.response.InvitationDto;
+import com.pokerapp.domain.invitation.Invitation;
+import com.pokerapp.domain.invitation.InvitationStatus;
+import com.pokerapp.domain.user.User;
+import com.pokerapp.exception.NotFoundException;
+import com.pokerapp.repository.InvitationRepository;
+import com.pokerapp.repository.UserRepository;
+import com.pokerapp.service.InvitationService;
+import com.pokerapp.service.TableService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class InvitationServiceImpl implements InvitationService {
+
+    private final InvitationRepository invitationRepository;
+    private final UserRepository userRepository;
+    private final TableService tableService;
+
+    @Autowired
+    public InvitationServiceImpl(
+            InvitationRepository invitationRepository,
+            UserRepository userRepository,
+            TableService tableService) {
+        this.invitationRepository = invitationRepository;
+        this.userRepository = userRepository;
+        this.tableService = tableService;
+    }
+
+    @Override
+    @Transactional
+    public Invitation createInvitation(InvitationRequestDto requestDto, User sender) {
+        User recipient = userRepository.findById(requestDto.getRecipientId())
+                .orElseThrow(() -> new NotFoundException("Recipient not found"));
+                
+        // Verify the table exists
+        tableService.getTableById(requestDto.getTableId());
+        
+        Invitation invitation = new Invitation();
+        invitation.setSender(sender);
+        invitation.setRecipient(recipient);
+        invitation.setTableId(requestDto.getTableId());
+        invitation.setMessage(requestDto.getMessage());
+        
+        return invitationRepository.save(invitation);
+    }
+
+    @Override
+    public List<InvitationDto> getPendingInvitationsForUser(User user) {
+        return invitationRepository.findByRecipientAndStatus(user, InvitationStatus.PENDING)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<InvitationDto> getSentInvitationsForUser(User user) {
+        return invitationRepository.findBySenderAndStatus(user, InvitationStatus.PENDING)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public InvitationDto acceptInvitation(Long invitationId, User user) {
+        Invitation invitation = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found"));
+                
+        if (!invitation.getRecipient().getId().equals(user.getId())) {
+            throw new IllegalStateException("This invitation is not for you");
+        }
+        
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new IllegalStateException("Invitation is not pending");
+        }
+        
+        if (invitation.isExpired()) {
+            invitation.setStatus(InvitationStatus.EXPIRED);
+            return convertToDto(invitationRepository.save(invitation));
+        }
+        
+        invitation.setStatus(InvitationStatus.ACCEPTED);
+        return convertToDto(invitationRepository.save(invitation));
+    }
+
+    @Override
+    @Transactional
+    public InvitationDto declineInvitation(Long invitationId, User user) {
+        Invitation invitation = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new NotFoundException("Invitation not found"));
+                
+        if (!invitation.getRecipient().getId().equals(user.getId())) {
+            throw new IllegalStateException("This invitation is not for you");
+        }
+        
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new IllegalStateException("Invitation is not pending");
+        }
+        
+        invitation.setStatus(InvitationStatus.DECLINED);
+        return convertToDto(invitationRepository.save(invitation));
+    }
+    
+    private InvitationDto convertToDto(Invitation invitation) {
+        InvitationDto dto = new InvitationDto();
+        dto.setId(invitation.getId());
+        dto.setSenderId(invitation.getSender().getId());
+        dto.setSenderName(invitation.getSender().getUsername());
+        dto.setRecipientId(invitation.getRecipient().getId());
+        dto.setRecipientName(invitation.getRecipient().getUsername());
+        dto.setTableId(invitation.getTableId());
+        dto.setStatus(invitation.getStatus().toString());
+        dto.setMessage(invitation.getMessage());
+        dto.setCreatedAt(invitation.getCreatedAt().toString());
+        dto.setExpiresAt(invitation.getExpiresAt().toString());
+        return dto;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/service/ReplayService.java
+package com.pokerapp.service;
+
+import com.pokerapp.api.dto.response.ReplayDto;
+import com.pokerapp.domain.game.Game;
+import com.pokerapp.domain.replay.Replay;
+
+import java.util.List;
+
+public interface ReplayService {
+    Replay createReplay(Game game);
+    ReplayDto getReplay(Long replayId);
+    List<ReplayDto> getReplaysByUser(Long userId);
+    List<ReplayDto> getReplaysByTable(Long tableId);
+    void completeReplay(Long gameId);
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/service/impl/ReplayServiceImpl.java
+package com.pokerapp.service.impl;
+
+import com.pokerapp.api.dto.response.GameActionDto;
+import com.pokerapp.api.dto.response.ReplayDto;
+import com.pokerapp.domain.game.Game;
+import com.pokerapp.domain.replay.Replay;
+import com.pokerapp.exception.NotFoundException;
+import com.pokerapp.repository.ReplayRepository;
+import com.pokerapp.service.ReplayService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class ReplayServiceImpl implements ReplayService {
+
+    private final ReplayRepository replayRepository;
+
+    @Autowired
+    public ReplayServiceImpl(ReplayRepository replayRepository) {
+        this.replayRepository = replayRepository;
+    }
+
+    @Override
+    @Transactional
+    public Replay createReplay(Game game) {
+        Replay replay = new Replay();
+        replay.setGame(game);
+        return replayRepository.save(replay);
+    }
+
+    @Override
+    public ReplayDto getReplay(Long replayId) {
+        Replay replay = replayRepository.findById(replayId)
+                .orElseThrow(() -> new NotFoundException("Replay not found"));
+                
+        return convertToDto(replay);
+    }
+
+    @Override
+    public List<ReplayDto> getReplaysByUser(Long userId) {
+        // Implementation would depend on how you store the relationship between replays and users
+        // This is a simplified example
+        return replayRepository.findAll().stream()
+                .filter(r -> r.getGame().getTable().getPlayers().stream()
+                        .anyMatch(p -> p.getId().equals(userId)))
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ReplayDto> getReplaysByTable(Long tableId) {
+        return replayRepository.findByGameTableId(tableId).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void completeReplay(Long gameId) {
+        Replay replay = replayRepository.findByGameId(gameId)
+                .orElseThrow(() -> new NotFoundException("Replay not found for game"));
+                
+        replay.completeReplay();
+        replayRepository.save(replay);
+    }
+    
+    private ReplayDto convertToDto(Replay replay) {
+        ReplayDto dto = new ReplayDto();
+        dto.setId(replay.getId());
+        dto.setGameId(replay.getGame().getId());
+        dto.setTableId(replay.getGame().getTable().getId());
+        dto.setStartTime(replay.getStartTime().toString());
+        
+        if (replay.getEndTime() != null) {
+            dto.setEndTime(replay.getEndTime().toString());
+        }
+        
+        List<GameActionDto> actions = replay.getActions().stream()
+                .map(action -> {
+                    GameActionDto actionDto = new GameActionDto();
+                    actionDto.setId(action.getId());
+                    actionDto.setPlayerId(action.getPlayer().getId());
+                    actionDto.setPlayerName(action.getPlayer().getUsername());
+                    actionDto.setActionType(action.getActionType());
+                    actionDto.setActionData(action.getActionData());
+                    actionDto.setTimestamp(action.getTimestamp().toString());
+                    actionDto.setSequenceNumber(action.getSequenceNumber());
+                    return actionDto;
+                }).collect(Collectors.toList());
+                
+        dto.setActions(actions);
+        return dto;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+API Layer (Enhanced)
+
+    
+// src/main/java/com/pokerapp/api/dto/request/TableSettingsDto.java
+package com.pokerapp.api.dto.request;
+
+import lombok.Data;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
+
+@Data
+public class TableSettingsDto {
+    @NotBlank
+    @Size(min = 3, max = 50)
+    private String name;
+    
+    @Size(max = 255)
+    private String description;
+    
+    @NotNull
+    @Positive
+    private Integer maxPlayers;
+    
+    @NotNull
+    @Positive
+    private Double minBuyIn;
+    
+    @NotNull
+    @Positive
+    private Double maxBuyIn;
+    
+    private Boolean isPrivate = false;
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/dto/request/InvitationRequestDto.java
+package com.pokerapp.api.dto.request;
+
+import lombok.Data;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+@Data
+public class InvitationRequestDto {
+    @NotNull
+    private Long recipientId;
+    
+    @NotNull
+    private Long tableId;
+    
+    @Size(max = 500)
+    private String message;
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/dto/response/InvitationDto.java
+package com.pokerapp.api.dto.response;
+
+import lombok.Data;
+
+@Data
+public class InvitationDto {
+    private Long id;
+    private Long senderId;
+    private String senderName;
+    private Long recipientId;
+    private String recipientName;
+    private Long tableId;
+    private String status;
+    private String message;
+    private String createdAt;
+    private String expiresAt;
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/dto/response/TableDto.java
+package com.pokerapp.api.dto.response;
+
+import lombok.Data;
+
+@Data
+public class TableDto {
+    private Long id;
+    private String name;
+    private String description;
+    private Integer maxPlayers;
+    private Integer currentPlayers;
+    private Double minBuyIn;
+    private Double maxBuyIn;
+    private Boolean isPrivate;
+    private Long ownerId;
+    private Boolean hasActiveGame;
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/dto/response/ReplayDto.java
+package com.pokerapp.api.dto.response;
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class ReplayDto {
+    private Long id;
+    private Long gameId;
+    private Long tableId;
+    private String startTime;
+    private String endTime;
+    private List<GameActionDto> actions;
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/dto/response/GameActionDto.java
+package com.pokerapp.api.dto.response;
+
+import lombok.Data;
+
+@Data
+public class GameActionDto {
+    private Long id;
+    private Long playerId;
+    private String playerName;
+    private String actionType;
+    private String actionData;
+    private String timestamp;
+    private Integer sequenceNumber;
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/controller/TableController.java
+package com.pokerapp.api.controller;
+
+import com.pokerapp.api.dto.request.TableSettingsDto;
+import com.pokerapp.api.dto.response.TableDto;
+import com.pokerapp.domain.user.User;
+import com.pokerapp.service.TableService;
+import com.pokerapp.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/tables")
+public class TableController {
+
+    private final TableService tableService;
+    private final UserService userService;
+
+    @Autowired
+    public TableController(TableService tableService, UserService userService) {
+        this.tableService = tableService;
+        this.userService = userService;
+    }
+
+    @PostMapping
+    public ResponseEntity<TableDto> createTable(@Valid @RequestBody TableSettingsDto settings) {
+        User currentUser = userService.getCurrentUser();
+        tableService.createTable(settings, currentUser);
+        return ResponseEntity.ok(convertToDto(tableService.createTable(settings, currentUser)));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<TableDto>> getAllTables() {
+        return ResponseEntity.ok(tableService.getAllTables());
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<List<TableDto>> getPublicTables() {
+        return ResponseEntity.ok(tableService.getPublicTables());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TableDto> getTableById(@PathVariable Long id) {
+        return ResponseEntity.ok(convertToDto(tableService.getTableById(id)));
+    }
+
+    @PostMapping("/{id}/join")
+    public ResponseEntity<TableDto> joinTable(
+            @PathVariable Long id,
+            @RequestParam Double buyIn) {
+        Long userId = userService.getCurrentUser().getId();
+        return ResponseEntity.ok(tableService.joinTable(id, userId, buyIn));
+    }
+
+    @PostMapping("/{id}/spectate")
+    public ResponseEntity<TableDto> spectateTable(@PathVariable Long id) {
+        Long userId = userService.getCurrentUser().getId();
+        return ResponseEntity.ok(tableService.joinTableAsSpectator(id, userId));
+    }
+
+    @PostMapping("/{id}/leave")
+    public ResponseEntity<TableDto> leaveTable(@PathVariable Long id) {
+        Long userId = userService.getCurrentUser().getId();
+        return ResponseEntity.ok(tableService.leaveTable(id, userId));
+    }
+
+    @PostMapping("/{id}/stop-spectating")
+    public ResponseEntity<TableDto> stopSpectating(@PathVariable Long id) {
+        Long userId = userService.getCurrentUser().getId();
+        return ResponseEntity.ok(tableService.removeSpectator(id, userId));
+    }
+
+    private TableDto convertToDto(com.pokerapp.domain.game.Table table) {
+        TableDto dto = new TableDto();
+        dto.setId(table.getId());
+        dto.setName(table.getName());
+        dto.setDescription(table.getDescription());
+        dto.setMaxPlayers(table.getMaxPlayers());
+        dto.setCurrentPlayers(table.getPlayers().size());
+        dto.setMinBuyIn(table.getMinBuyIn());
+        dto.setMaxBuyIn(table.getMaxBuyIn());
+        dto.setIsPrivate(table.getIsPrivate());
+        dto.setOwnerId(table.getOwner().getId());
+        dto.setHasActiveGame(table.getCurrentGame() != null);
+        return dto;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/controller/InvitationController.java
+package com.pokerapp.api.controller;
+
+import com.pokerapp.api.dto.request.InvitationRequestDto;
+import com.pokerapp.api.dto.response.InvitationDto;
+import com.pokerapp.domain.invitation.Invitation;
+import com.pokerapp.domain.user.User;
+import com.pokerapp.service.InvitationService;
+import com.pokerapp.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/invitations")
+public class InvitationController {
+
+    private final InvitationService invitationService;
+    private final UserService userService;
+
+    @Autowired
+    public InvitationController(InvitationService invitationService, UserService userService) {
+        this.invitationService = invitationService;
+        this.userService = userService;
+    }
+
+    @PostMapping
+    public ResponseEntity<InvitationDto> sendInvitation(@Valid @RequestBody InvitationRequestDto requestDto) {
+        User currentUser = userService.getCurrentUser();
+        Invitation invitation = invitationService.createInvitation(requestDto, currentUser);
+        return ResponseEntity.ok(convertToDto(invitation));
+    }
+
+    @GetMapping("/received")
+    public ResponseEntity<List<InvitationDto>> getReceivedInvitations() {
+        User currentUser = userService.getCurrentUser();
+        return ResponseEntity.ok(invitationService.getPendingInvitationsForUser(currentUser));
+    }
+
+    @GetMapping("/sent")
+    public ResponseEntity<List<InvitationDto>> getSentInvitations() {
+        User currentUser = userService.getCurrentUser();
+        return ResponseEntity.ok(invitationService.getSentInvitationsForUser(currentUser));
+    }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<InvitationDto> acceptInvitation(@PathVariable Long id) {
+        User currentUser = userService.getCurrentUser();
+        return ResponseEntity.ok(invitationService.acceptInvitation(id, currentUser));
+    }
+
+    @PostMapping("/{id}/decline")
+    public ResponseEntity<InvitationDto> declineInvitation(@PathVariable Long id) {
+        User currentUser = userService.getCurrentUser();
+        return ResponseEntity.ok(invitationService.declineInvitation(id, currentUser));
+    }
+
+    private InvitationDto convertToDto(Invitation invitation) {
+        InvitationDto dto = new InvitationDto();
+        dto.setId(invitation.getId());
+        dto.setSenderId(invitation.getSender().getId());
+        dto.setSenderName(invitation.getSender().getUsername());
+        dto.setRecipientId(invitation.getRecipient().getId());
+        dto.setRecipientName(invitation.getRecipient().getUsername());
+        dto.setTableId(invitation.getTableId());
+        dto.setStatus(invitation.getStatus().toString());
+        dto.setMessage(invitation.getMessage());
+        dto.setCreatedAt(invitation.getCreatedAt().toString());
+        dto.setExpiresAt(invitation.getExpiresAt().toString());
+        return dto;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+
+    
+// src/main/java/com/pokerapp/api/controller/ReplayController.java
+package com.pokerapp.api.controller;
+
+import com.pokerapp.api.dto.response.ReplayDto;
+import com.pokerapp.service.ReplayService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/replays")
+public class ReplayController {
+
+    private final ReplayService replayService;
+
+    @Autowired
+    public ReplayController(ReplayService replayService) {
+        this.replayService = replayService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ReplayDto> getReplay(@PathVariable Long id) {
+        return ResponseEntity.ok(replayService.getReplay(id));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ReplayDto>> getReplaysByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(replayService.getReplaysByUser(userId));
+    }
+
+    @GetMapping("/table/{tableId}")
+    public ResponseEntity<List<ReplayDto>> getReplaysByTable(@PathVariable Long tableId) {
+        return ResponseEntity.ok(replayService.getReplaysByTable(tableId));
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+Enhanced Game Service Implementation
+
+    
+// src/main/java/com/pokerapp/service/impl/GameServiceImpl.java
+package com.pokerapp.service.impl;
+
+import com.pokerapp.api.dto.request.MoveDto;
+import com.pokerapp.api.dto.response.GameStateDto;
+import com.pokerapp.api.dto.response.PlayerStateDto;
+import com.pokerapp.api.dto.response.CardDto;
+import com.pokerapp.domain.card.Card;
+import com.pokerapp.domain.game.*;
+import com.pokerapp.domain.poker.HandEvaluator;
+import com.pokerapp.domain.replay.GameAction;
+import com.pokerapp.domain.replay.Replay;
+import com.pokerapp.domain.user.Player;
+import com.pokerapp.domain.user.PlayerStatus;
+import com.pokerapp.exception.InvalidMoveException;
+import com.pokerapp.exception.NotFoundException;
+import com.pokerapp.repository.GameRepository;
+import com.pokerapp.repository.PlayerRepository;
+import com.pokerapp.repository.ReplayRepository;
+import com.pokerapp.repository.TableRepository;
+import com.pokerapp.service.GameService;
+import com.pokerapp.service.ReplayService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class GameServiceImpl implements GameService {
+
+    private final GameRepository gameRepository;
+    private final TableRepository tableRepository;
+    private final PlayerRepository playerRepository;
+    private final ReplayRepository replayRepository;
+    private final ReplayService replayService;
+    private final HandEvaluator handEvaluator;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    public GameServiceImpl(
+            GameRepository gameRepository,
+            TableRepository tableRepository,
+            PlayerRepository playerRepository,
+            ReplayRepository replayRepository,
+            ReplayService replayService,
+            HandEvaluator handEvaluator,
+            SimpMessagingTemplate messagingTemplate) {
+        this.gameRepository = gameRepository;
+        this.tableRepository = tableRepository;
+        this.playerRepository = playerRepository;
+        this.replayRepository = replayRepository;
+        this.replayService = replayService;
+        this.handEvaluator = handEvaluator;
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    @Override
+    @Transactional
+    public Game createGame(Long tableId) {
+        Table table = tableRepository.findById(tableId)
+                .orElseThrow(() -> new NotFoundException("Table not found"));
+                
+        Game game = new Game();
+        game.setTable(table);
+        game.setSmallBlind(table.getMinBuyIn() / 100);
+        game.setBigBlind(table.getMinBuyIn() / 50);
+        game.setStatus(GameStatus.WAITING);
+        
+        game = gameRepository.save(game);
+        
+        // Create and associate replay system
+        replayService.createReplay(game);
+        
+        return game;
+    }
+
+    @Override
+    @Transactional
+    public Game startGame(Long gameId) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new NotFoundException("Game not found"));
+                
+        if (game.getStatus() != GameStatus.WAITING) {
+            throw new IllegalStateException("Game is not in WAITING state");
+        }
+        
+        if (game.getTable().getPlayers().size() < 2) {
+            throw new IllegalStateException("Need at least 2 players to start a game");
+        }
+        
+        game.start();
+        Game savedGame = gameRepository.save(game);
+        
+        // Notify all players
+        messagingTemplate.convertAndSend("/topic/games/" + gameId, getGameState(gameId));
+        
+        return savedGame;
+    }
+
+    @Override
+    public GameStateDto getGameState(Long gameId) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new NotFoundException("Game not found"));
+                
+        GameStateDto gameStateDto = new GameStateDto();
+        gameStateDto.setGameId(game.getId());
+        gameStateDto.setStatus(game.getStatus().toString());
+        
+        if (game.getCurrentRound() != null) {
+            gameStateDto.setPot(game.getCurrentRound().getPot());
+            
+            // Only show community cards if they've been dealt
+            List<CardDto> communityCards = game.getCurrentRound().getCommunityCards().stream()
+                .filter(Card::isShowing)
+                .map(this::convertToCardDto)
+                .collect(Collectors.toList());
+            gameStateDto.setCommunityCards(communityCards);
+            
+            BettingRound bettingRound = game.getCurrentRound().getCurrentBettingRound();
+            if (bettingRound != null) {
+                gameStateDto.setCurrentBet(bettingRound.getCurrentBet());
+                gameStateDto.setStage(bettingRound.getStage().toString());
+                
+                // Set current player
+                Player nextPlayer = bettingRound.getNextPlayer();
+                if (nextPlayer != null) {
+                    gameStateDto.setCurrentPlayerId(nextPlayer.getId());
+                    
+                    // Add possible actions for current player
+                    List<String> possibleActions = getPossibleActions(game, nextPlayer);
+                    gameStateDto.setPossibleActions(possibleActions);
+                }
+            }
+        }
+        
+        // Add player states (with proper card visibility)
+        List<PlayerStateDto> playerStates = game.getTable().getPlayers().stream()
+            .map(player -> convertToPlayerStateDto(player, game))
+            .collect(Collectors.toList());
+        gameStateDto.setPlayers(playerStates);
+        
+        return gameStateDto;
+    }
+
+    @Override
+    @Transactional
+    public GameStateDto makeMove(Long gameId, Long playerId, MoveDto moveDto) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new NotFoundException("Game not found"));
+                
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new NotFoundException("Player not found"));
+                
+        if (game.getStatus() != GameStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Game is not in progress");
+        }
+        
+        GameRound round = game.getCurrentRound();
+        BettingRound bettingRound = round.getCurrentBettingRound();
+        
+        // Check if it's this player's turn
+        if (!isPlayerTurn(game, player)) {
+            throw new InvalidMoveException("Not your turn");
+        }
+        
+        // Create and process move
+        Move move = new Move();
+        move.setType(MoveType.valueOf(moveDto.getType()));
+        move.setAmount(moveDto.getAmount());
+        move.setPlayer(player);
+        
+        bettingRound.processMove(player, move);
+        
+        // Record for replay
+        Replay replay = replayRepository.findByGameId(gameId)
+                .orElseThrow(() -> new NotFoundException("Replay not found"));
+        replay.recordAction(GameAction.fromMove(move, replay.getActionCounter() + 1));
+        replayRepository.save(replay);
+        
+        // Handle player status based on move
+        updatePlayerStatus(player, move);
+        playerRepository.save(player);
+        
+        // Check if betting round is complete
+        if (isBettingRoundComplete(bettingRound)) {
+            advanceGame(game);
+        }
+        
+        gameRepository.save(game);
+        
+        // Notify all players
+        GameStateDto gameState = getGameState(gameId);
+        messagingTemplate.convertAndSend("/topic/games/" + gameId, gameState);
+        
+        return gameState;
+    }
+
+    private void updatePlayerStatus(Player player, Move move) {
+        switch (move.getType()) {
+            case FOLD:
+                player.setStatus(PlayerStatus.FOLDED);
+                break;
+            case ALL_IN:
+                player.setStatus(PlayerStatus.ALL_IN);
+                break;
+            default:
+                player.setStatus(PlayerStatus.ACTIVE);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Game endGame(Long gameId) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new NotFoundException("Game not found"));
+                
+        List<Player> winners = game.determineWinner();
+        
+        // Distribute pot to winners
+        if (!winners.isEmpty()) {
+            GameRound round = game.getCurrentRound();
+            double potPerWinner = round.getPot() / winners.size();
+            
+            for (Player winner : winners) {
+                winner.setChips(winner.getChips() + potPerWinner);
+                playerRepository.save(winner);
+            }
+        }
+        
+        game.setStatus(GameStatus.FINISHED);
+        Game savedGame = gameRepository.save(game);
+        
+        // Complete the replay
+        replayService.completeReplay(gameId);
+        
+        return savedGame;
+    }
+    
+    private boolean isPlayerTurn(Game game, Player player) {
+        GameRound round = game.getCurrentRound();
+        if (round == null) return false;
+        
+        BettingRound bettingRound = round.getCurrentBettingRound();
+        if (bettingRound == null) return false;
+        
+        Player nextPlayer = bettingRound.getNextPlayer();
+        return nextPlayer != null && nextPlayer.getId().equals(player.getId());
+    }
+    
+    private boolean isBettingRoundComplete(BettingRound bettingRound) {
+        // Implementation to check if betting round is complete
+        // This would check if all active players have made a move and bets are equal
+        return bettingRound.getNextPlayer() == null;
+    }
+    
+    private void advanceGame(Game game) {
+        GameRound round = game.getCurrentRound();
+        BettingRound bettingRound = round.getCurrentBettingRound();
+        
+        // If this was the river, determine winners and end the round
+        if (bettingRound.getStage() == BettingStage.RIVER) {
+            List<Player> winners = game.determineWinner();
+            
+            // Distribute pot
+            if (!winners.isEmpty()) {
+                double potPerWinner = round.getPot() / winners.size();
+                for (Player winner : winners) {
+                    winner.setChips(winner.getChips() + potPerWinner);
+                    playerRepository.save(winner);
+                }
+            }
+            
+            // Start new round or end game
+            if (shouldStartNewRound(game)) {
+                startNewRound(game);
+            } else {
+                game.setStatus(GameStatus.FINISHED);
+                replayService.completeReplay(game.getId());
+            }
+        } else {
+            // Advance to next betting stage
+            round.advanceToNextBettingRound();
+        }
+    }
+    
+    private boolean shouldStartNewRound(Game game) {
+        // Check if there are at least 2 players with chips
+        int playersWithChips = 0;
+        for (Player player : game.getTable().getPlayers()) {
+            if (player.getChips() > 0) {
+                playersWithChips++;
+            }
+        }
+        return playersWithChips >= 2;
+    }
+    
+    private void startNewRound(Game game) {
+        // Reset all players who still have chips
+        for (Player player : game.getTable().getPlayers()) {
+            if (player.getChips() > 0) {
+                player.setStatus(PlayerStatus.ACTIVE);
+            }
+        }
+        
+        // Create new round
+        GameRound newRound = new GameRound();
+        newRound.setRoundNumber(game.getGameRounds().size() + 1);
+        newRound.setGame(game);
+        game.getGameRounds().add(newRound);
+        game.setCurrentRound(newRound);
+        
+        // Advance dealer position
+        game.setDealerPosition((game.getDealerPosition() + 1) % game.getTable().getPlayers().size());
+        
+        // Deal cards
+        dealPlayerCards(game);
+        
+        // Start with preflop betting
+        newRound.advanceToNextBettingRound();
+    }
+    
+    private void dealPlayerCards(Game game) {
+        for (Player player : game.getTable().getPlayers()) {
+            if (player.getChips() > 0) {
+                if (player.getHand() == null) {
+                    player.setHand(new Hand());
+                } else {
+                    player.getHand().clear();
+                }
+                
+                // Each player gets 2 cards
+                player.getHand().addCard(game.getDeck().drawCard());
+                player.getHand().addCard(game.getDeck().drawCard());
+                playerRepository.save(player);
+            }
+        }
+    }
+    
+    private List<String> getPossibleActions(Game game, Player player) {
+        List<String> actions = new ArrayList<>();
+        GameRound round = game.getCurrentRound();
+        BettingRound bettingRound = round.getCurrentBettingRound();
+        
+        Double currentBet = bettingRound.getCurrentBet();
+        
+        // Player can always fold
+        actions.add("FOLD");
+        
+        // Check is possible when there's no bet to call
+        if (currentBet == 0) {
+            actions.add("CHECK");
+        } else {
+            // Call is possible when there's a bet to call
+            actions.add("CALL");
+        }
+        
+        // Raise is possible if player has enough chips
+        if (player.getChips() > currentBet) {
+            actions.add("RAISE");
+        }
+        
+        // All-in is always an option
+        actions.add("ALL_IN");
+        
+        return actions;
+    }
+    
+    private CardDto convertToCardDto(Card card) {
+        CardDto dto = new CardDto();
+        if (card.isShowing()) {
+            dto.setSuit(card.getSuit().toString());
+            dto.setRank(card.getRank().toString());
+        } else {
+            dto.setHidden(true);
+        }
+        return dto;
+    }
+    
+    private PlayerStateDto convertToPlayerStateDto(Player player, Game game) {
+        PlayerStateDto dto = new PlayerStateDto();
+        dto.setId(player.getId());
+        dto.setUsername(player.getUsername());
+        dto.setChips(player.getChips());
+        dto.setStatus(player.getStatus().toString());
+        
+        // Only show cards at showdown or to the player themselves
+        boolean showCards = game.getStatus() == GameStatus.FINISHED || 
+                           (game.getCurrentRound() != null && 
+                            game.getCurrentRound().getCurrentBettingRound() != null &&
+                            game.getCurrentRound().getCurrentBettingRound().getStage() == BettingStage.RIVER);
+        
+        if (player.getHand() != null && (showCards || player.getId().equals(getCurrentUserId()))) {
+            List<CardDto> cards = player.getHand().getCards().stream()
+                .map(this::convertToCardDto)
+                .collect(Collectors.toList());
+            dto.setCards(cards);
+        }
+        
+        return dto;
+    }
+    
+    // In a real application, this would come from the security context
+    private Long getCurrentUserId() {
+        return 1L; // Placeholder
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+User Stories Fulfillment Analysis
+As a user, I want to be able to log in to the platform using my credentials, so that I can access my account and balance.
+
+Implemented UserService for authentication
+JWT token security with login endpoint
+User entity stores balance
+As a user, I want to create a new poker game, so that I can invite other players and start playing.
+
+Added TableService to create tables with custom settings
+Added GameService to create games on tables
+Enhanced Table entity to track table owner and privacy settings
+As a user, I want to join an existing poker game using a portion of my balance, so that I can play with others and potentially win more money.
+
+TableService has joinTable() method with buyIn parameter
+Table entity transfers money from balance to chips
+Game manages player chips through the betting rounds
+As a user, I want to join a game as a spectator, so that I can watch others play without participating directly.
+
+Added Spectator entity
+Enhanced Table entity to track spectators
+Added spectator functionality in TableService
+Added endpoints for joining/leaving as spectator
+As a player, I want to invite other users to join my poker game, so that we can have a complete table for playing.
+
+Added Invitation entity and related services/controllers
+Created invitation workflow (send, accept, decline)
+Added notifications for invitations
+As a player, I want to engage in a standard poker game, with the ability to bet, fold, raise, and check, so that I can play according to the rules.
+
+Implemented MoveType enum with all standard poker actions
+GameService handles move processing
+Added WebSocket support for real-time game updates
+As a player, I want to leave a game and have my remaining money returned to my overall balance, so that my finances are accurately tracked.
+
+Enhanced Player entity with leaveTable() method
+Table entity handles player removal and returns chips to balance
+Added endpoint for leaving a table
+As the system, I want to log every game in a database, so that games can be replayed and reviewed for fairness and learning.
+
+Added Replay and GameAction entities
+Enhanced ReplayService to record all game actions
+Added endpoints for retrieving and viewing replays
+Complete Project
+The implementation now fully addresses all the user stories while maintaining a clean architecture and separation of concerns. The enhanced poker application provides:
+
+Comprehensive user management
+Table creation and management
+Game mechanics with proper poker rules
+Real-time updates via WebSockets
+Invitation system
+Spectator functionality
+Replay system for game review
+Proper balance management
+All classes are properly connected, and the folder structure follows best practices for a Spring Boot application.
