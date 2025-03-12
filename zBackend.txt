@@ -1,1 +1,5 @@
 FERTIG
+
+
+2025-03-12T23:55:59.665+01:00 ERROR 15837 --- [  restartedMain] o.s.b.web.embedded.tomcat.TomcatStarter  : Error starting Tomcat context. Exception: org.springframework.beans.factory.UnsatisfiedDependencyException. Message: Error creating bean with name 'jwtAuthenticationFilter': Unsatisfied dependency expressed through field 'userDetailsService': Error creating bean with name 'userDetailsServiceImpl' defined in file [/Users/sebastianrogg/IdeaProjects/Pokerapp/target/classes/com/pokerapp/security/UserDetailsServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'userRepository' defined in com.pokerapp.repository.UserRepository defined in @EnableJpaRepositories declared on PokerappApplication: Cannot resolve reference to bean 'jpaSharedEM_entityManagerFactory' while setting bean property 'entityManager'
+2025-03-12T23:55:59.690+01:00  INFO 15837 --- [  restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
