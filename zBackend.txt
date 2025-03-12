@@ -3,3 +3,233 @@ FERTIG
 
 2025-03-12T23:55:59.665+01:00 ERROR 15837 --- [  restartedMain] o.s.b.web.embedded.tomcat.TomcatStarter  : Error starting Tomcat context. Exception: org.springframework.beans.factory.UnsatisfiedDependencyException. Message: Error creating bean with name 'jwtAuthenticationFilter': Unsatisfied dependency expressed through field 'userDetailsService': Error creating bean with name 'userDetailsServiceImpl' defined in file [/Users/sebastianrogg/IdeaProjects/Pokerapp/target/classes/com/pokerapp/security/UserDetailsServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'userRepository' defined in com.pokerapp.repository.UserRepository defined in @EnableJpaRepositories declared on PokerappApplication: Cannot resolve reference to bean 'jpaSharedEM_entityManagerFactory' while setting bean property 'entityManager'
 2025-03-12T23:55:59.690+01:00  INFO 15837 --- [  restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+
+// src/main/java/com/pokerapp/service/impl/UserRoleServiceImpl.java
+package com.pokerapp.service.impl;
+
+import com.pokerapp.domain.user.Player;
+import com.pokerapp.domain.user.Spectator;
+import com.pokerapp.domain.user.User;
+import com.pokerapp.domain.user.UserType;
+import com.pokerapp.exception.NotFoundException;
+import com.pokerapp.repository.PlayerRepository;
+import com.pokerapp.repository.SpectatorRepository;
+import com.pokerapp.repository.UserRepository;
+import com.pokerapp.service.UserRoleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+
+@Service
+public class UserRoleServiceImpl implements UserRoleService {
+
+    private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
+    private final SpectatorRepository spectatorRepository;
+
+    @Autowired
+    public UserRoleServiceImpl(
+            UserRepository userRepository,
+            PlayerRepository playerRepository,
+            SpectatorRepository spectatorRepository) {
+        this.userRepository = userRepository;
+        this.playerRepository = playerRepository;
+        this.spectatorRepository = spectatorRepository;
+    }
+
+    @Override
+    @Transactional
+    public Player convertToPlayer(User user) {
+        if (user.getUserType() == UserType.PLAYER) {
+            return playerRepository.findById(user.getId())
+                    .orElseThrow(() -> new NotFoundException("Player not found"));
+        }
+        
+        // Create a new Player and copy attributes
+        Player player = new Player();
+        player.setId(user.getId());
+        player.setUsername(user.getUsername());
+        player.setEmail(user.getEmail());
+        player.setPassword(user.getPassword());
+        player.setBalance(user.getBalance());
+        player.setAvatar(user.getAvatar());
+        player.setRoles(user.getRoles());
+        player.addRole("PLAYER");
+        player.setUserType(UserType.PLAYER);
+        
+        return playerRepository.save(player);
+    }
+
+    @Override
+    @Transactional
+    public Spectator convertToSpectator(User user) {
+        if (user.getUserType() == UserType.SPECTATOR) {
+            return spectatorRepository.findById(user.getId())
+                    .orElseThrow(() -> new NotFoundException("Spectator not found"));
+        }
+        
+        // Create a new Spectator and copy attributes
+        Spectator spectator = new Spectator();
+        spectator.setId(user.getId());
+        spectator.setUsername(user.getUsername());
+        spectator.setEmail(user.getEmail());
+        spectator.setPassword(user.getPassword());
+        spectator.setBalance(user.getBalance());
+        spectator.setAvatar(user.getAvatar());
+        spectator.setRoles(user.getRoles());
+        spectator.addRole("SPECTATOR");
+        spectator.setUserType(UserType.SPECTATOR);
+        
+        return spectatorRepository.save(spectator);
+    }
+
+    @Override
+    public User getUserWithRoles(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+                
+        switch (user.getUserType()) {
+            case PLAYER:
+                return playerRepository.findById(userId)
+                        .orElse(user);
+            case SPECTATOR:
+                return spectatorRepository.findById(userId)
+                        .orElse(user);
+            default:
+                return user;
+        }
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+7. Add New Controller Endpoints for Role Management
+
+    
+// src/main/java/com/pokerapp/api/controller/UserRoleController.java
+package com.pokerapp.api.controller;
+
+import com.pokerapp.api.dto.response.UserDto;
+import com.pokerapp.domain.user.Player;
+import com.pokerapp.domain.user.Spectator;
+import com.pokerapp.domain.user.User;
+import com.pokerapp.service.UserRoleService;
+import com.pokerapp.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/users/roles")
+public class UserRoleController {
+
+    private final UserRoleService userRoleService;
+    private final UserService userService;
+
+    @Autowired
+    public UserRoleController(UserRoleService userRoleService, UserService userService) {
+        this.userRoleService = userRoleService;
+        this.userService = userService;
+    }
+
+    @PostMapping("/player")
+    public ResponseEntity<UserDto> becomePlayer() {
+        User currentUser = userService.getCurrentUser();
+        Player player = userRoleService.convertToPlayer(currentUser);
+        return ResponseEntity.ok(convertToDto(player));
+    }
+
+    @PostMapping("/spectator")
+    public ResponseEntity<UserDto> becomeSpectator() {
+        User currentUser = userService.getCurrentUser();
+        Spectator spectator = userRoleService.convertToSpectator(currentUser);
+        return ResponseEntity.ok(convertToDto(spectator));
+    }
+
+    private UserDto convertToDto(User user) {
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setBalance(user.getBalance());
+        dto.setRole(user.getUserType().name());
+        
+        if (user instanceof Player) {
+            Player player = (Player) user;
+            dto.setCurrentTableId(player.getCurrentTableId());
+        } else if (user instanceof Spectator) {
+            Spectator spectator = (Spectator) user;
+            dto.setWatchingTableId(spectator.getWatchingTableId());
+        }
+        
+        return dto;
+    }
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+8. Update UserDto to Include More Role Information
+
+    
+// src/main/java/com/pokerapp/api/dto/response/UserDto.java
+package com.pokerapp.api.dto.response;
+
+import lombok.Data;
+
+@Data
+public class UserDto {
+    private Long id;
+    private String username;
+    private String email;
+    private Double balance;
+    private String role;  // User type (REGULAR, PLAYER, SPECTATOR)
+    private Long currentTableId;  // For players
+    private Long watchingTableId; // For spectators
+}
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+9. Update application.yml for H2 Database
+
+    
+spring:
+  datasource:
+    url: jdbc:h2:mem:pokerdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+ⓘ
+For code that is intended to be used in Siemens products or services, the code generation features of our AI Services may only be used after prior approval of your responsible organizational unit.
+10. Configure Security for H2 Console
+
+    
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    // Other code...
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .cors().and().csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .authorizeRequests()
+            .antMatchers("/api/users/register", "/api/users/login").permitAll()
+            .antMatchers("/h2-console/**").permitAll()  // Allow H2 console
+            .anyRequest().authenticated();
+            
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        
+        // Required for H2 console
+        http.headers().frameOptions().disable();
+    }
+}
