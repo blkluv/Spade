@@ -1236,3 +1236,28 @@ body {
     flex-direction: column;
   }
 }
+
+/* Socket Connection Indicator Styles */
+.connection-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.status-circle {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+}
+
+.status-circle.connected {
+  color: #4caf50; /* Green */
+}
+
+.status-circle.disconnected {
+  color: #f44336; /* Red */
+}
+
+.connection-error {
+  color: red;
+  text-align: center;
+}

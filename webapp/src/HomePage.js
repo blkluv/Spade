@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import CamDiv from "./CamDiv";
 
-function HomePage({ socket, darkMode }) {
+function HomePage({ socket, socketConnected, darkMode }) {
   // States for camera and scanning
   const webcamRef = useRef(null);
   const [cameraEnabled, setCameraEnabled] = useState(false);
@@ -25,7 +25,7 @@ function HomePage({ socket, darkMode }) {
 
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setActionStatus(`Action "${action}" completed.`);
 
       // Clear status after 2 seconds
@@ -248,6 +248,7 @@ function HomePage({ socket, darkMode }) {
           </div>
         ) : (
           <div className="scanner-container">
+            {socketConnected ? (
             <div className="scanner-overlay">
               <div className={`scan-area ${cameraEnabled ? "active" : ""}`}>
                 <CamDiv
@@ -264,7 +265,10 @@ function HomePage({ socket, darkMode }) {
               >
                 {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
               </button>
-            </div>
+            </div>) :
+            <div className="connection-error">
+            Server connection failed. <br /> Please restart server or debug.
+            </div>}
           </div>
         )}
       </div>

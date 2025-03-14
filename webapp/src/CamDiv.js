@@ -11,8 +11,8 @@ function CamDiv({ cameraEnabled, webcamRef, onCapture }) {
         }
       };
 
-      // Capture an image every 2 seconds
-      const interval = setInterval(captureImage, 500);
+      // Capture an image in specified intervals
+      const interval = setInterval(captureImage, 800);
       return () => clearInterval(interval);
     }
   }, [cameraEnabled, webcamRef, onCapture]);

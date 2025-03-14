@@ -1,22 +1,26 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FaMoon, FaSun, FaHome, FaUser } from "react-icons/fa";
 import { GiPokerHand } from "react-icons/gi";
+import { BsCircleFill } from "react-icons/bs";
 import CamDiv from "./CamDiv";
 import HomePage from "./HomePage";
 import ProfilePage from "./ProfilePage";
 import { io } from "socket.io-client";
 import "./styles.css";
 
-const socket = io("http://127.0.0.1:5001", {
-  transports: ["websocket"],
-  secure: true,
+const socket = io("192.168.178.112:5001", {
   rejectUnauthorized: false,
+  reconnection: true,
+  reconnectionAttempts: Infinity, // Keep trying indefinitely
+  reconnectionDelay: 10000,        // Wait 5 seconds between attempts
 });
+
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [currentPage, setCurrentPage] = useState("home");
   const [user, setUser] = useState(null);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   useEffect(() => {
     // Apply theme class to body
@@ -32,6 +36,31 @@ function App() {
       }
     }
   }, [darkMode]);
+
+  useEffect(() => {
+    // Socket connection event listeners
+    const onConnect = () => {
+      setSocketConnected(true);
+      console.log("Socket connected");
+    };
+
+    const onDisconnect = () => {
+      setSocketConnected(false);
+      console.log("Socket disconnected");
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+
+    // Set initial connection state
+    setSocketConnected(socket.connected);
+
+    // Clean up event listeners
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+    };
+  }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -56,59 +85,64 @@ function App() {
         </div>
 
         <div className="header-controls">
+          <div className="connection-indicator">
+            <BsCircleFill
+                className={`status-circle ${socketConnected ? "connected" : "disconnected"}`}
+            />
+          </div>
           <button
-            className={`nav-button ${currentPage === "home" ? "active" : ""}`}
-            onClick={() => navigateTo("home")}
-            aria-label="Home"
+              className={`nav-button ${currentPage === "home" ? "active" : ""}`}
+              onClick={() => navigateTo("home")}
+              aria-label="Home"
           >
-            <FaHome className="nav-icon" />
+            <FaHome className="nav-icon"/>
           </button>
 
           <button
-            className={`nav-button ${
-              currentPage === "profile" ? "active" : ""
-            }`}
-            onClick={() => navigateTo("profile")}
-            aria-label="Profile"
+              className={`nav-button ${
+                  currentPage === "profile" ? "active" : ""
+              }`}
+              onClick={() => navigateTo("profile")}
+              aria-label="Profile"
           >
             {user ? (
-              <div
-                className={`mini-avatar ${
-                  user.customAvatar ? "custom" : `avatar-${user.avatar}`
-                }`}
-                style={
-                  user.customAvatar
-                    ? { backgroundImage: `url(${user.customAvatar})` }
-                    : {}
-                }
-              >
-                {!user.customAvatar && user.username.charAt(0).toUpperCase()}
-              </div>
+                <div
+                    className={`mini-avatar ${
+                        user.customAvatar ? "custom" : `avatar-${user.avatar}`
+                    }`}
+                    style={
+                      user.customAvatar
+                          ? {backgroundImage: `url(${user.customAvatar})`}
+                          : {}
+                    }
+                >
+                  {!user.customAvatar && user.username.charAt(0).toUpperCase()}
+                </div>
             ) : (
-              <FaUser className="nav-icon" />
+                <FaUser className="nav-icon"/>
             )}
           </button>
 
           <button
-            className="theme-toggle"
-            onClick={() => setDarkMode(!darkMode)}
-            aria-label="Toggle theme"
+              className="theme-toggle"
+              onClick={() => setDarkMode(!darkMode)}
+              aria-label="Toggle theme"
           >
-            {darkMode ? <FaSun /> : <FaMoon />}
+            {darkMode ? <FaSun/> : <FaMoon/>}
           </button>
         </div>
       </header>
 
       <main>
         {currentPage === "home" && (
-          <HomePage socket={socket} darkMode={darkMode} />
+            <HomePage socket={socket} socketConnected={socketConnected} darkMode={darkMode}/>
         )}
 
         {currentPage === "profile" && (
-          <ProfilePage
-            user={user}
-            onLogin={handleLogin}
-            onLogout={handleLogout}
+            <ProfilePage
+                user={user}
+                onLogin={handleLogin}
+                onLogout={handleLogout}
             navigateToHome={() => navigateTo("home")}
           />
         )}
