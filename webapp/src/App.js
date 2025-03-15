@@ -8,13 +8,12 @@ import ProfilePage from "./ProfilePage";
 import { io } from "socket.io-client";
 import "./styles.css";
 
-const socket = io("192.168.178.112:5001", {
-  rejectUnauthorized: false,
+const socket = io("http://192.168.178.112:5001", {
+  rejectUnauthorized: false, // Important for self-signed certificates
   reconnection: true,
-  reconnectionAttempts: Infinity, // Keep trying indefinitely
-  reconnectionDelay: 10000,        // Wait 5 seconds between attempts
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 10000,
 });
-
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
