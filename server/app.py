@@ -8,12 +8,19 @@ import urllib.parse
 
 import requests
 from flask import Flask, redirect, request, session
+from flask_socketio import SocketIO
 from flask import jsonify
 from flask import render_template
 from flask_cors import CORS
 from waitress import serve
+from ultralytics import YOLO
+from PIL import Image
+import io
+import numpy as np
+import cv2
 
 import lyricsgenius
+import re
 
 from server.assets.data.HeatMapData import heatmap_data
 from server.src.game.utils.game_utils import display_spade_art
@@ -28,8 +35,11 @@ def generate_random_string(length):
 
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 app.secret_key = 'a_random_secret_key_12345'  # Required for session handling (optional)
+
+MODEL_PATH = '../webapp/models/best_60_23.pt'
 
 CLIENT_ID = "258c86af6a9e45ac8fac5185cceff480"
 CLIENT_SECRET = "e5c969b18de0458a95552515897cd7fc"
@@ -51,6 +61,53 @@ player_names = ['Bozzetti', 'Huber', 'Rogg', 'Meierlohr', 'Hoerter', 'Simon',
 players = [Player(name) for name in player_names]
 shared_resources = SharedResources()
 game = GameRound(players, small_blind=10, big_blind=20, shared_resources=shared_resources)
+
+# Initialize AI model
+model = YOLO(MODEL_PATH)
+
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+
+def process_frame(image_data, n):
+    # Convert binary data to OpenCV image
+    nparr = np.frombuffer(image_data, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    # Run inference
+    print("Running inference")
+    results = model(img)
+    print(results)
+
+    # Extract unique class names
+    unique_classes = []
+    for r in results:
+        for box in r.boxes:
+            cls_name = model.names[int(box.cls)]
+            if cls_name not in unique_classes:
+                unique_classes.append(cls_name)
+
+    print({
+        'predictions': unique_classes[:n],
+        'found': len(unique_classes) >= n
+    })
+
+    # Prepare response
+    return {
+        'predictions': unique_classes[:n],
+        'found': len(unique_classes) >= n
+    }
+
+
+@socketio.on('frame')
+def handle_frame(data):
+    print("Received a frame!!!")
+    n = data['n']
+    image_data = data['image']
+    response = process_frame(image_data, n)
+    return response  # SocketIO automatically sends acknowledgement
 
 
 @app.route('/', methods=['GET'])
@@ -74,16 +131,36 @@ def get_lyrics():
         return jsonify({"error": "Please provide both 'artist' and 'title' parameters."}), 400
 
     try:
-        # Suche nach dem Song
-        song = genius.search_song(song_title, artist)
+        # Search for the song
+        song = genius.search_song(song_title, artist, get_full_info=False)
         if song:
-            # Rückgabe der Songtexte
-            lyrics = song.lyrics
-            return jsonify({"artist": artist, "title": song_title, "lyrics": lyrics})
+            # Remove lines with unwanted terms or square brackets
+            unwanted_terms = ['contributors', 'translations', 'lyrics']
+            lines = song.lyrics.split('\n')
+            filtered_lines = []
+            for line in lines:
+                line_lower = line.lower()
+
+                # Stop processing if "number embed" pattern is found
+                if re.search(r'\d+embed', line_lower):
+                    break
+
+                # Exclude lines with unwanted terms or square brackets
+                if (not any(term in line_lower for term in unwanted_terms) and
+                        not re.search(r'\[.*?\]', line)):
+                    filtered_lines.append(line.strip())
+
+            # Join the filtered lines and remove any extra spaces
+            cleaned_lyrics = '\n'.join(filtered_lines).strip()
+
+            if not cleaned_lyrics:
+                return jsonify({"error": "Lyrics not found after filtering."}), 404
+            return jsonify({"artist": artist, "title": song_title, "lyrics": cleaned_lyrics})
         else:
             return jsonify({"error": "Lyrics not found."}), 404
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 
 # Endpoints for Poker
@@ -326,8 +403,9 @@ if __name__ == '__main__':
     DEBUG = True
 
     if DEBUG:
-        app.run(debug=False, host='127.0.0.1', port=5000
-                , ssl_context=('./cert.pem', './key.pem')
-                )
+  #      app.run(debug=False, host='127.0.0.1', port=5000
+   #             , ssl_context=('./cert.pem', './key.pem')
+    #            )
+        socketio.run(app, debug=True, host='0.0.0.0', port=5001)
     else:
-        serve(app, host='0.0.0.0', port=5000)
+        serve(app, host='0.0.0.0', port=5001)
