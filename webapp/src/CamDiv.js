@@ -26,6 +26,7 @@ function CamDiv({ cameraEnabled, webcamRef, onCapture }) {
             <Webcam
               ref={webcamRef}
               audio={false}
+              mirrored={false}
               screenshotFormat="image/jpeg"
               videoConstraints={{
                 width: 720,
