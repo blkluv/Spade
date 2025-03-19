@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaMoon, FaSun, FaHome, FaUser } from "react-icons/fa";
+import { FaMoon, FaSun, FaHome, FaUser, FaCog } from "react-icons/fa";
 import { GiPokerHand } from "react-icons/gi";
 import { BsCircleFill } from "react-icons/bs";
 import CamDiv from "./CamDiv";
 import HomePage from "./HomePage";
 import ProfilePage from "./ProfilePage";
+import CalibrationPage from "./CalibrationPage";
 import { io } from "socket.io-client";
 import "./styles.css";
 
@@ -97,6 +98,15 @@ function App() {
             <FaHome className="nav-icon"/>
           </button>
 
+          {/* New Calibration Tab Button */}
+          <button
+              className={`nav-button ${currentPage === "calibration" ? "active" : ""}`}
+              onClick={() => navigateTo("calibration")}
+              aria-label="Calibration"
+          >
+            <FaCog className="nav-icon"/>
+          </button>
+
           <button
               className={`nav-button ${
                   currentPage === "profile" ? "active" : ""
@@ -137,13 +147,18 @@ function App() {
             <HomePage socket={socket} socketConnected={socketConnected} darkMode={darkMode}/>
         )}
 
+        {/* New Calibration Page Rendering */}
+        {currentPage === "calibration" && (
+            <CalibrationPage socket={socket} socketConnected={socketConnected} />
+        )}
+
         {currentPage === "profile" && (
             <ProfilePage
                 user={user}
                 onLogin={handleLogin}
                 onLogout={handleLogout}
-            navigateToHome={() => navigateTo("home")}
-          />
+                navigateToHome={() => navigateTo("home")}
+            />
         )}
       </main>
     </div>

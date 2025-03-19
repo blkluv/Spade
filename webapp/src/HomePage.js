@@ -286,7 +286,9 @@ function HomePage({ socket, socketConnected, darkMode }) {
           </button>
           <button
             className="action-button call"
-            onClick={() => sendAction("call")}
+            onClick={() => {
+                setShowRaiseInput(false);
+                sendAction("call")}}
             disabled={isLoading}
           >
             <span className="button-icon">♣</span>
@@ -294,7 +296,9 @@ function HomePage({ socket, socketConnected, darkMode }) {
           </button>
           <button
             className="action-button check"
-            onClick={() => sendAction("check")}
+            onClick={() => {
+                setShowRaiseInput(false);
+                sendAction("check")}}
             disabled={isLoading}
           >
             <span className="button-icon">♥</span>
@@ -302,7 +306,9 @@ function HomePage({ socket, socketConnected, darkMode }) {
           </button>
           <button
             className="action-button fold"
-            onClick={() => sendAction("fold")}
+            onClick={() => {
+                setShowRaiseInput(false);
+                sendAction("fold");}}
             disabled={isLoading}
           >
             <span className="button-icon">♠</span>
