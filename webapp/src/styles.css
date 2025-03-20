@@ -1262,6 +1262,56 @@ body {
   text-align: center;
 }
 
+.camera-security-warning {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.8);
+   z-index: 1000;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   padding: 20px;
+ }
+
+   .warning-content {
+     padding: 25px;
+     border-radius: 10px;
+     max-width: 500px;
+     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+   }
+
+   .warning-content h3 {
+     color: #f44336;
+     margin-top: 0;
+   }
+
+   .warning-actions {
+     display: flex;
+     gap: 10px;
+     margin-top: 20px;
+   }
+
+   .warning-actions button {
+     padding: 10px 15px;
+     background-color: var(--action-color);
+     color: white;
+     border: none;
+     border-radius: 5px;
+     cursor: pointer;
+   }
+
+   .https-link {
+     display: inline-block;
+     padding: 10px 15px;
+     background-color: #4CAF50;
+     color: white;
+     text-decoration: none;
+     border-radius: 5px;
+   }
+
 /*----------------------------------------
   11. CALIBRATION PAGE
 -----------------------------------------*/

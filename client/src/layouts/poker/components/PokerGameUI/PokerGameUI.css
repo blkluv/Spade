@@ -1,19 +1,122 @@
-.poker-table-container {
-  width: 100%; /* Anpassungen anpassen */
-  height: 100%; /* Container fängt Vollbild */
-  margin: 0 auto;
-  border: 3px solid #ffcc00;
-  border-radius: 15px;
+.poker-game-ui {
+  width: 100%;
+  height: 100%;
+  position: relative;
   overflow: hidden;
-  transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease;
+}
+
+.poker-game-ui.fullscreen {
+  border-radius: 12px;
+}
+
+.poker-game-ui.mobile {
+  border-radius: 8px;
+}
+
+/* Community Cards Styling */
+.community-cards {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: clamp(6px, 1.5vw, 20px);
+  z-index: 15;
+}
+
+.community-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-origin: center;
+  transition: transform 0.3s ease;
+  animation: cardAppear 0.5s ease both;
 }
 
 .community-card {
-  width: 6vw; /* Größere Karte */
-  max-width: 120px;
-  transition: transform 0.3s ease; /* Animation wenn Hover */
+  width: clamp(30px, 4vw, 60px);
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+  filter: brightness(1.1);
 }
 
-.community-card:hover {
-  transform: scale(1.1); /* Hineinzoomen */
+.community-card-container:hover .community-card {
+  transform: translateY(-8px) scale(1.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.2);
+  z-index: 30;
+}
+
+.community-card-placeholder {
+  width: clamp(30px, 4vw, 60px);
+  height: clamp(42px, 5.6vw, 84px);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+/* Connection error notification */
+.connection-error {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background-color: rgba(220, 53, 69, 0.9);
+  color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  animation: fadeInDown 0.5s ease;
+}
+
+/* Animations */
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Media Queries */
+@media (max-width: 1200px) {
+  .community-cards {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .community-card {
+    width: clamp(35px, 5vw, 60px);
+  }
+
+  .community-card-placeholder {
+    width: clamp(35px, 5vw, 60px);
+    height: clamp(49px, 7vw, 84px);
+  }
+}
+
+@media (max-width: 600px) {
+  .community-cards {
+    gap: 4px;
+  }
 }

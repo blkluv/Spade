@@ -9,7 +9,7 @@ import CalibrationPage from "./CalibrationPage";
 import { io } from "socket.io-client";
 import "./styles.css";
 
-const socket = io("http://192.168.178.112:5001", {
+const socket = io("http://192.168.178.73:5001", {
   rejectUnauthorized: false, // Important for self-signed certificates
   reconnection: true,
   reconnectionAttempts: Infinity,

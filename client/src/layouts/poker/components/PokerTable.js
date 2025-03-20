@@ -1,52 +1,43 @@
 import React from "react";
 import "./PokerTable.css";
+import EnhancedChipStack from "./EnhancedChipStack";
 
-const PokerTable = ({ pokerTableBackground, pot, children, isFullscreen }) => (
-  <div
-    className="table"
-    style={{
-      position: "relative",
-      margin: "auto", // Zentriert den Container horizontal und vertikal
-      width: isFullscreen ? "100%" : "90%", // Vollbild im Fokus
-      maxWidth: isFullscreen ? "none" : "1200px", // keine Einschränkung
-      height: isFullscreen ? "100vh" : "80vh", // Bildschirmhöhe
-      overflow: "auto",
-      display: "table",
-      justifyContent: "center",
-      alignItems: "center",
-      border: isFullscreen ? "5px solid #ffcc00" : "2px solid transparent", // Breitere Grenzen
-      transition: "all 0.3s ease",
-    }}
-  >
-    <img
-      src={pokerTableBackground}
-      alt="Poker Table"
-      style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: isFullscreen ? "130%" : "100%", // Bildanpassung
-        height: isFullscreen ? "110%" : "100%",
-        objectFit: "cover",
-      }}
-    />
-    <div
-      style={{
-        position: "absolute",
-        bottom: isFullscreen ? "20%" : "35%", // Fokus neu platzieren
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        color: "white",
-        fontWeight: "bold",
-        fontSize: isFullscreen ? "2vw" : "1.5vw", // Fokus dynamisch
-        textAlign: "center",
-      }}
-    >
-      Pot: ${pot}
+const PokerTable = ({ pokerTableBackground, pot, children, isFullscreen }) => {
+  // Format pot value with commas for thousands
+  const formattedPot = typeof pot === 'number' ? pot.toLocaleString() : pot;
+
+  return (
+    <div className={`poker-table ${isFullscreen ? 'fullscreen' : ''}`}>
+      {/* Table background image */}
+      <div className="poker-table-background">
+        <img
+          src={pokerTableBackground}
+          alt="Poker Table"
+          className="table-background-image"
+        />
+
+        {/* Overlay gradient for depth */}
+        <div className="table-overlay"></div>
+      </div>
+
+      {/* Pot display */}
+      <div className="pot-container">
+        <div className="pot-label">POT</div>
+        <div className="pot-amount">${formattedPot}</div>
+
+        {/* Visual chip representation of the pot */}
+        {pot && pot !== 'Loading...' && (
+          <EnhancedChipStack amount={Number(pot)} maxVisibleChips={5} />
+        )}
+      </div>
+
+      {/* Community cards zone indicator */}
+      <div className="community-cards-zone"></div>
+
+      {/* Player positions and game elements */}
+      {children}
     </div>
-    {children}
-  </div>
-);
+  );
+};
 
 export default PokerTable;
