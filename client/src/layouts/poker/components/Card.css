@@ -2,7 +2,7 @@
   position: relative;
   width: 60px;
   height: 84px; /* Standard poker card aspect ratio */
-  border-radius: 6px;
+  border-radius: 2px;
   overflow: hidden;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
   transition: all 0.3s ease;

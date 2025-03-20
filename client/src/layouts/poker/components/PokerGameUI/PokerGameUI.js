@@ -3,7 +3,6 @@ import Player from "../player/Player";
 import PokerTable from "../PokerTable";
 import { getPlayerPositions, getPlayerScaling } from "../../utils/positionUtils";
 import { loadCardImage } from "../../utils/cardUtils";
-import PokerTableBackground from "../../../../assets/images/poker/poker_table/PokerTable100.png";
 import LoadingSpinner from "../../utils/loadingSpinner/LoadingSpinner";
 import "./PokerGameUI.css";
 
@@ -222,7 +221,6 @@ const PokerGameUI = ({ isFullscreen, isMobile }) => {
         <LoadingSpinner />
       ) : (
         <PokerTable
-          pokerTableBackground={PokerTableBackground}
           pot={pot !== null ? pot : "Loading..."}
           isFullscreen={isFullscreen}
         >

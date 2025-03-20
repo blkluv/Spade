@@ -1,27 +1,20 @@
 import React from "react";
 import "./PokerTable.css";
-import ChipStack from "./ChipStack";
+import ChipStack from ".//ChipStack";
+import CustomPokerTable from "..//CustomPokerTable";
 
-const PokerTable = ({ pokerTableBackground, pot, children, isFullscreen }) => {
+const PokerTable = ({ pot, children, isFullscreen }) => {
   // Format pot value with commas for thousands
   const formattedPot = typeof pot === 'number' ? pot.toLocaleString() : pot;
 
   return (
     <div className={`poker-table ${isFullscreen ? 'fullscreen' : ''}`}>
-      {/* Table background image */}
-      <div className="poker-table-background">
-        <img
-          src={pokerTableBackground}
-          alt="Poker Table"
-          className="table-background-image"
-        />
-
-        {/* Overlay gradient for depth */}
-        <div className="table-overlay"></div>
-      </div>
+      {/* Custom table background */}
+      <CustomPokerTable />
 
       {/* Pot display */}
       <div className="pot-container">
+        <div className="pot-label">POT</div>
         <div className="pot-amount">${formattedPot}</div>
 
         {/* Visual chip representation of the pot */}
