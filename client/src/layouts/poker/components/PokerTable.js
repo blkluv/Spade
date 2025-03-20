@@ -1,6 +1,6 @@
 import React from "react";
 import "./PokerTable.css";
-import EnhancedChipStack from "./EnhancedChipStack";
+import ChipStack from "./ChipStack";
 
 const PokerTable = ({ pokerTableBackground, pot, children, isFullscreen }) => {
   // Format pot value with commas for thousands
@@ -22,12 +22,11 @@ const PokerTable = ({ pokerTableBackground, pot, children, isFullscreen }) => {
 
       {/* Pot display */}
       <div className="pot-container">
-        <div className="pot-label">POT</div>
         <div className="pot-amount">${formattedPot}</div>
 
         {/* Visual chip representation of the pot */}
         {pot && pot !== 'Loading...' && (
-          <EnhancedChipStack amount={Number(pot)} maxVisibleChips={5} />
+          <ChipStack amount={Number(pot)} isPot={true} />
         )}
       </div>
 

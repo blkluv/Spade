@@ -35,7 +35,7 @@
 }
 
 .community-card {
-  width: clamp(30px, 4vw, 60px);
+  width: clamp(30px, 5vw, 70px);
   height: auto;
   border-radius: 4px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);

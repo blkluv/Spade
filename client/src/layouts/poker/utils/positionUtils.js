@@ -5,7 +5,7 @@
 export const getPlayerPositions = (numPlayers, containerWidth, containerHeight) => {
   // Calculate optimal oval parameters based on container dimensions
   const tableWidth = containerWidth * 0.85;
-  const tableHeight = containerHeight * 0.8; // Increased vertical space usage
+  const tableHeight = containerHeight * 0.73; // Increased vertical space usage
 
   // Calculate ellipse parameters (semi-major and semi-minor axes)
   const a = tableWidth * 0.45; // horizontal semi-axis
@@ -13,7 +13,7 @@ export const getPlayerPositions = (numPlayers, containerWidth, containerHeight) 
 
   // Center point of the table
   const centerX = containerWidth / 2;
-  const centerY = containerHeight / 2;
+  const centerY = containerHeight / 2 - 10;
 
   // Calculate positions around the ellipse
   // Starting position is at the bottom of the ellipse (closest to the user)

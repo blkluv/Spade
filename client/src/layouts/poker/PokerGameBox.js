@@ -41,9 +41,9 @@ function PokerGameBox() {
         height: isFullscreen
           ? "100vh"
           : isSmallScreen
-          ? "calc(100vw * 0.85)"
-          : "calc(100vw * 0.55)",
-        minHeight: isSmallScreen ? "350px" : "550px",
+          ? "calc(100vw * 0.95)"
+          : "calc(100vw * 0.75)",
+        minHeight: isSmallScreen ? "450px" : "700",
         maxHeight: isFullscreen ? "100vh" : "90vh",
       }}
     >
