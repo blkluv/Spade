@@ -43,12 +43,12 @@ class GameRound:
 
     def play_round(self):
         """Plays a complete round of poker, with option to modify settings before starting."""
-        if input("Would you like to make any changes before starting the round? (yes/no): ").lower() == 'yes':
-            modify_game_settings(self)  # Use the input module's method
-            if self.exit_game:
-                self.save_logs()
-                print("Game exited.")
-                return  # Exit game if user chose to
+        #if input("Would you like to make any changes before starting the round? (yes/no): ").lower() == 'yes':
+        #    modify_game_settings(self)  # Use the input module's method
+         #   if self.exit_game:
+          #      self.save_logs()
+           #     print("Game exited.")
+            #    return  # Exit game if user chose to
 
         display_new_round()
         self.assign_blinds()

@@ -14,7 +14,6 @@ const PokerTable = ({ pot, children, isFullscreen }) => {
 
       {/* Pot display */}
       <div className="pot-container">
-        <div className="pot-label">POT</div>
         <div className="pot-amount">${formattedPot}</div>
 
         {/* Visual chip representation of the pot */}

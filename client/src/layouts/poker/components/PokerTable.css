@@ -54,7 +54,7 @@
 
 .pot-container {
   position: absolute;
-  bottom: 27%;
+  bottom: 23%;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -72,7 +72,6 @@
   font-weight: 700;
   color: #ffcc00;
   text-shadow: 0 0 10px rgba(255, 204, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.7);
-  margin-bottom: 5px;
 }
 
 .community-cards-zone {
