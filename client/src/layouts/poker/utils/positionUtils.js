@@ -15,7 +15,7 @@ export const getPlayerPositions = (numPlayers, containerWidth, containerHeight) 
 
   // Center point of the table - moved slightly higher
   const centerX = containerWidth / 2;
-  const centerY = containerHeight / 2 - 10; // Moved higher by 5px
+  const centerY = containerHeight / 2 - 20; // Moved higher by 5px
 
   // Calculate positions around the ellipse
   // Starting position is at the bottom of the ellipse (closest to the user)

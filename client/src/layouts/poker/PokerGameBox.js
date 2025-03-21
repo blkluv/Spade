@@ -44,7 +44,7 @@ function PokerGameBox() {
           : isSmallScreen
           ? "calc(100vw * 0.95)"
           : "calc(100vw * 0.825)", // Increased from 0.75 to 0.825 (10% more)
-        minHeight: isSmallScreen ? "450px" : "650px", // Adjusted min-height
+        minHeight: isSmallScreen ? "650px" : "750px", // Adjusted min-height
         maxHeight: isFullscreen ? "100vh" : "90vh",
       }}
     >
