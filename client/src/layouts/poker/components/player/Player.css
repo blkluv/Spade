@@ -1,8 +1,8 @@
 /* Player Container */
 .player-container {
   position: absolute;
-  width: 160px;
-  height: 160px;
+  width: 140px; /* Reduced from 160px */
+  height: 140px; /* Reduced from 160px */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -16,7 +16,7 @@
 }
 
 .player-container.active .player-info {
-  box-shadow: 0 0 30px rgba(82, 172, 250, 0.8);
+  box-shadow: 0 0 25px rgba(82, 172, 250, 0.8); /* Reduced intensity */
   border: 1px solid rgba(82, 172, 250, 0.8);
   animation: pulse 2s infinite;
 }
@@ -35,10 +35,10 @@
 .dealer-button {
   position: absolute;
   top: 80%;
-  right: -25px;
+  right: -20px; /* Moved closer */
   transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
+  width: 28px; /* Reduced from 32px */
+  height: 28px; /* Reduced from 32px */
   background: linear-gradient(135deg, #ffd700, #ffa500);
   border-radius: 50%;
   display: flex;
@@ -46,8 +46,8 @@
   justify-content: center;
   font-weight: bold;
   color: #000;
-  font-size: 14px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  font-size: 12px; /* Reduced from 14px */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
   border: 2px solid #fff;
   z-index: 30;
 }
@@ -55,17 +55,17 @@
 /* Status Indicator */
 .status-indicator {
   position: absolute;
-  top: -20px;
+  top: -15px; /* Moved closer */
   left: 50%;
   transform: translateX(-50%);
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 2px 8px; /* Reduced padding */
+  border-radius: 10px; /* Reduced from 12px */
+  font-size: 10px; /* Reduced from 12px */
   font-weight: bold;
   text-transform: uppercase;
   color: white;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.8px; /* Reduced from 1px */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   z-index: 25;
   white-space: nowrap;
 }
@@ -73,12 +73,12 @@
 .status-indicator.active {
   background-color: #1e88e5;
   animation: blink 1.5s infinite;
-  top: +65px;
+  top: +55px; /* Moved closer */
 }
 
 .status-indicator.folded {
   background-color: #e53935;
-  top: +65px;
+  top: +55px; /* Moved closer */
 }
 
 .status-indicator.call {
@@ -97,22 +97,22 @@
 .player-cards {
   position: relative;
   display: flex;
-  transform: translateY(20px) scale(1.10);
+  transform: translateY(15px) scale(1); /* Reduced scale */
   transition: all 0.3s ease;
 }
 
 .player-container.active .player-cards {
-  transform: translateY(+30px) scale(1.10);
+  transform: translateY(+25px) scale(1); /* Reduced scale */
 }
 
 /* Player Information */
 .player-info {
   width: 100%;
-  padding: 8px;
+  padding: 6px; /* Reduced from 8px */
   background-color: rgba(25, 33, 38, 0.85);
   backdrop-filter: blur(4px);
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 8px; /* Reduced from 10px */
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3); /* Reduced intensity */
   border: 1px solid rgba(82, 172, 250, 0.2);
   transition: all 0.3s ease;
 }
@@ -122,14 +122,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px; /* Reduced from 8px */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 5px;
+  padding-bottom: 4px; /* Reduced from 5px */
 }
 
 .player-name {
   margin: 0;
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   font-weight: 600;
   color: white;
   text-overflow: ellipsis;
@@ -139,12 +139,12 @@
 }
 
 .win-probability {
-  font-size: 12px;
+  font-size: 11px; /* Reduced from 12px */
   font-weight: 700;
   color: #ffcc00;
   background-color: rgba(0, 0, 0, 0.2);
-  padding: 2px 6px;
-  border-radius: 8px;
+  padding: 1px 5px; /* Reduced padding */
+  border-radius: 6px; /* Reduced from 8px */
 }
 
 /* Player Stats */
@@ -160,15 +160,15 @@
 }
 
 .stat-label {
-  font-size: 10px;
+  font-size: 9px; /* Reduced from 10px */
   color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 2px;
+  margin-bottom: 1px; /* Reduced from 2px */
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .stat-value {
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   font-weight: 700;
   color: white;
   position: relative;
@@ -187,8 +187,8 @@
 /* Bet Visualization */
 .player-bet-visualization {
   position: absolute;
-  top: 50%;
-  left: 95%;
+  top: 60%;
+  left: 92%; /* Moved closer */
   transform: translate(-50%, -20px);
   display: flex;
   flex-direction: column;
@@ -199,13 +199,13 @@
 /* Animations */
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 10px rgba(82, 172, 250, 0.6);
+    box-shadow: 0 0 8px rgba(82, 172, 250, 0.6);
   }
   50% {
-    box-shadow: 0 0 25px rgba(82, 172, 250, 0.9);
+    box-shadow: 0 0 20px rgba(82, 172, 250, 0.9);
   }
   100% {
-    box-shadow: 0 0 10px rgba(82, 172, 250, 0.6);
+    box-shadow: 0 0 8px rgba(82, 172, 250, 0.6);
   }
 }
 
@@ -218,26 +218,24 @@
 /* Media Queries */
 @media (max-width: 1200px) {
   .player-container {
-    width: 160px;
+    width: 130px; /* Reduced size for medium screens */
   }
 
   .player-name {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .stat-value {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 
 @media (max-width: 768px) {
   .player-container {
-    width: 140px;
+    width: 120px; /* Reduced size for small screens */
   }
 
   .player-info {
-    padding: 8px;
+    padding: 5px;
   }
-
-
 }

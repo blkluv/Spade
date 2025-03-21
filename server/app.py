@@ -56,8 +56,7 @@ genius = lyricsgenius.Genius("UUODLxcCpDdlIm_k8hqQvP-qYcQrfnvOB9ULnwDAS7LsQ-ZVtQ
 CORS(app)
 
 # Initialize the game state
-player_names = ['Bozzetti', 'Huber', 'Rogg', 'Meierlohr', 'Hoerter', 'Simon',
-                'Vorderbruegge', 'Maier']
+player_names = ['Bozzetti', 'Huber', 'Rogg', 'Meierlohr', 'Hoerter', 'Simon']
 players = [Player(name) for name in player_names]
 shared_resources = SharedResources()
 game = GameRound(players, small_blind=10, big_blind=20, shared_resources=shared_resources)

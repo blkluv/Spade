@@ -4,12 +4,13 @@ import ChipStack from "../ChipStack";
 import "./Player.css";
 
 const Player = ({ player, position, isDealer, isFullscreen }) => {
-  // Calculate scale based on position and screen size
+  // Calculate scale based on position and screen size - reduced by 10%
   const getScale = () => {
-    const baseScale = isFullscreen ? 1.2 : 1;
-    return baseScale * (window.innerWidth > 1600 ? 1.2 :
-                        window.innerWidth > 1200 ? 1 :
-                        window.innerWidth > 768 ? 0.85 : 0.7);
+    // Reduced base scale when not in fullscreen
+    const baseScale = isFullscreen ? 1.0 : 0.9; // Changed from 1 to 0.9
+    return baseScale * (window.innerWidth > 1600 ? 1.1 :
+                       window.innerWidth > 1200 ? 0.95 :
+                       window.innerWidth > 768 ? 0.8 : 0.65);
   };
 
   const scale = getScale();

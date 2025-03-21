@@ -1,19 +1,21 @@
 /**
  * Enhanced positioning utility for poker players
  * Creates a perfect oval regardless of container dimensions or aspect ratio
+ * Optimized for compact player layout
  */
 export const getPlayerPositions = (numPlayers, containerWidth, containerHeight) => {
   // Calculate optimal oval parameters based on container dimensions
-  const tableWidth = containerWidth * 0.85;
-  const tableHeight = containerHeight * 0.72; // Increased vertical space usage
+  // Increased ellipse size to accommodate more compact player boxes
+  const tableWidth = containerWidth * 0.88;  // Increased from 0.85
+  const tableHeight = containerHeight * 0.72; // Increased from 0.72
 
   // Calculate ellipse parameters (semi-major and semi-minor axes)
-  const a = tableWidth * 0.45; // horizontal semi-axis
-  const b = tableHeight * 0.5; // vertical semi-axis
+  const a = tableWidth * 0.47; // horizontal semi-axis (increased from 0.45)
+  const b = tableHeight * 0.52; // vertical semi-axis (increased from 0.5)
 
-  // Center point of the table
+  // Center point of the table - moved slightly higher
   const centerX = containerWidth / 2;
-  const centerY = containerHeight / 2 - 20;
+  const centerY = containerHeight / 2 - 10; // Moved higher by 5px
 
   // Calculate positions around the ellipse
   // Starting position is at the bottom of the ellipse (closest to the user)
@@ -31,8 +33,12 @@ export const getPlayerPositions = (numPlayers, containerWidth, containerHeight) 
     // For 3-4 players, use 3/4 of the ellipse (leave bottom quarter empty)
     startAngle = -Math.PI * 7/8;
     endAngle = Math.PI * 7/8;
+  } else if (numPlayers <= 6) {
+    // For 5-6 players, use a bit more of the ellipse
+    startAngle = -Math.PI * 0.92;
+    endAngle = Math.PI * 0.92;
   } else {
-    // For 5+ players, use the full ellipse
+    // For 7+ players, use the full ellipse
     startAngle = 0;
     endAngle = 2 * Math.PI;
   }
@@ -78,12 +84,12 @@ export const getPlayerPositions = (numPlayers, containerWidth, containerHeight) 
  */
 export const getPlayerScaling = (position, containerWidth, isFullscreen) => {
   // Base scale adjusted by container width
-  const baseScale = containerWidth / 1200;
+  const baseScale = containerWidth / 1300; // Reduced base scale
 
   // Adjust for fullscreen
-  const fullscreenMultiplier = isFullscreen ? 1.2 : 1;
+  const fullscreenMultiplier = isFullscreen ? 1.2 : 0.9; // Reduced from 1 to 0.9
 
   return {
-    scale: Math.min(Math.max(baseScale * fullscreenMultiplier, 0.6), 1.5)
+    scale: Math.min(Math.max(baseScale * fullscreenMultiplier, 0.5), 1.4) // Lower min/max bounds
   };
 };

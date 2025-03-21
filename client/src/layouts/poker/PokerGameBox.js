@@ -38,12 +38,13 @@ function PokerGameBox() {
     <div
       className={`poker-game-container ${isFullscreen ? 'fullscreen' : ''} ${isTransitioning ? 'transitioning' : ''}`}
       style={{
+        // Increased height by 10% when not in fullscreen
         height: isFullscreen
           ? "100vh"
           : isSmallScreen
           ? "calc(100vw * 0.95)"
-          : "calc(100vw * 0.75)",
-        minHeight: isSmallScreen ? "450px" : "700",
+          : "calc(100vw * 0.825)", // Increased from 0.75 to 0.825 (10% more)
+        minHeight: isSmallScreen ? "450px" : "650px", // Adjusted min-height
         maxHeight: isFullscreen ? "100vh" : "90vh",
       }}
     >
