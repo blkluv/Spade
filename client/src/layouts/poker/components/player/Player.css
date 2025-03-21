@@ -129,7 +129,7 @@
 
 .player-name {
   margin: 0;
-  font-size: 12px; /* Reduced from 14px */
+  font-size: 14px; /* Reduced from 14px */
   font-weight: 600;
   color: white;
   text-overflow: ellipsis;
@@ -139,7 +139,7 @@
 }
 
 .win-probability {
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 12px; /* Reduced from 12px */
   font-weight: 700;
   color: #ffcc00;
   background-color: rgba(0, 0, 0, 0.2);
@@ -160,7 +160,7 @@
 }
 
 .stat-label {
-  font-size: 9px; /* Reduced from 10px */
+  font-size: 10px; /* Reduced from 10px */
   color: rgba(255, 255, 255, 0.6);
   margin-bottom: 1px; /* Reduced from 2px */
   text-transform: uppercase;
@@ -168,7 +168,7 @@
 }
 
 .stat-value {
-  font-size: 12px; /* Reduced from 14px */
+  font-size: 14px; /* Reduced from 14px */
   font-weight: 700;
   color: white;
   position: relative;
