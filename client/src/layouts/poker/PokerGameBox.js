@@ -1,100 +1,85 @@
-import React, { useState } from "react";
-import { Card, useMediaQuery } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Card, useMediaQuery, IconButton } from "@mui/material";
 import PokerGameUI from "./components/PokerGameUI/PokerGameUI";
 import GameButtons from "./components/buttons/GameButtons";
-import VuiButton from "../../components/VuiButton";
 import { FullscreenExitRounded, FullscreenRounded } from "@mui/icons-material";
+import "./PokerGameBox.css";
 
 function PokerGameBox() {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const isSmallScreen = useMediaQuery("(max-width: 960px)");
+  const isMobileScreen = useMediaQuery("(max-width: 600px)");
 
+  // Handle fullscreen transition
   const toggleFullscreen = () => {
+    setIsTransitioning(true);
     setIsFullscreen(!isFullscreen);
+
+    // Reset transitioning state after animation completes
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 400); // Match transition duration
   };
 
-  const fullscreenStyles = isFullscreen
-    ? {
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "rgba(0, 0, 0, 0.9)",
-        zIndex: 9998,
-        overflow: "hidden",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        pointerEvents: "none", // Prevent the fullscreen container from blocking clicks
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === "Escape" && isFullscreen) {
+        toggleFullscreen();
       }
-    : {};
+    };
+
+    window.addEventListener("keydown", handleEscKey);
+    return () => window.removeEventListener("keydown", handleEscKey);
+  }, [isFullscreen]);
 
   return (
     <div
+      className={`poker-game-container ${isFullscreen ? 'fullscreen' : ''} ${isTransitioning ? 'transitioning' : ''}`}
       style={{
-        ...fullscreenStyles,
-        width: isFullscreen ? "100vw" : "100%",
         height: isFullscreen
           ? "100vh"
           : isSmallScreen
-          ? "300px"
-          : "50vw",
-        transition: "all 0.3s ease",
-        pointerEvents: "auto", // Restore interactivity for children
+          ? "calc(100vw * 0.95)"
+          : "calc(100vw * 0.75)",
+        minHeight: isSmallScreen ? "450px" : "700",
+        maxHeight: isFullscreen ? "100vh" : "90vh",
       }}
     >
       <Card
+        className="poker-game-card"
         sx={{
-          width: isFullscreen ? "95%" : "100%",
-          height: isFullscreen ? "95%" : "100%",
-          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          backgroundColor: "rgba(16, 20, 24, 0.9)",
+          backgroundImage: "linear-gradient(to bottom, rgba(39, 49, 56, 0.8), rgba(16, 20, 24, 0.9))",
           borderRadius: "20px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-          padding: "20px",
           boxShadow: isFullscreen
-            ? "0 8px 20px rgba(255, 255, 255, 0.4)"
-            : "0 4px 12px rgba(0, 0, 0, 0.3)",
+            ? "0 0 40px rgba(0, 0, 0, 0.7), inset 0 0 60px rgba(26, 138, 211, 0.1)"
+            : "0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(26, 138, 211, 0.1)",
+          border: "1px solid rgba(82, 172, 250, 0.2)",
           overflow: "hidden",
         }}
       >
         {/* Fullscreen Button */}
-        <VuiButton
+        <IconButton
           onClick={toggleFullscreen}
-          variant="text" // Use "text" variant to remove background
-          color="info"
-          style={{
-            position: "absolute",
-            top: "20px",
-            right: "20px",
-            fontSize: "2rem",
-            padding: "0",
-            zIndex: 9999, // Ensure button is on top
-            backgroundColor: "transparent", // Remove background color
-            boxShadow: "none", // Remove any shadow
-            minWidth: "auto", // Remove minimum width
-            "&:hover": {
-            backgroundColor: "transparent", // Ensure no background on hover
-            },
-            pointerEvents: "auto", // Make button clickable
-          }}
+          className="fullscreen-button"
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? (
-            <FullscreenExitRounded style={{ transform: "scale(2.5)", color: "white" }} />
+            <FullscreenExitRounded />
           ) : (
-            <FullscreenRounded style={{ transform: "scale(2.5)", color: "white" }} />
+            <FullscreenRounded />
           )}
-        </VuiButton>
+        </IconButton>
 
         {/* Poker-UI Rendering */}
-        <PokerGameUI isFullscreen={isFullscreen} />
+        <PokerGameUI isFullscreen={isFullscreen} isMobile={isMobileScreen} />
 
         {/* Game Buttons */}
-        <GameButtons />
+        <div className="game-buttons-container">
+          <GameButtons isFullscreen={isFullscreen} />
+        </div>
       </Card>
     </div>
   );

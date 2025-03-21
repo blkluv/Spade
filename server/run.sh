@@ -24,4 +24,4 @@ fi
 echo "PYTHONPATH: $PYTHONPATH"
 echo -e "Running... $SCRIPT_DIR/app.py\n\n"
 
-python app.py
+python3 app.py

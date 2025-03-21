@@ -315,3 +315,5 @@ cython_debug/
 client/package-lock.json
 yarn.lock
 commit.sh
+
+client/src/context/

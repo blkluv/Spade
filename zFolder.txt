@@ -1,0 +1,120 @@
+src/
+├── main/
+│   ├── java/
+│   │   └── com/
+│   │       └── pokerapp/
+│   │           ├── PokerApplication.java
+│   │           │
+│   │           ├── config/
+│   │           │   ├── SecurityConfig.java
+│   │           │   ├── WebSocketConfig.java
+│   │           │   └── ApplicationConfig.java
+│   │           │
+│   │           ├── api/
+│   │           │   ├── controller/
+│   │           │   │   ├── UserController.java
+│   │           │   │   ├── LobbyController.java
+│   │           │   │   ├── GameController.java
+│   │           │   │   ├── StatisticsController.java
+│   │           │   │   └── ReplayController.java
+│   │           │   │
+│   │           │   ├── websocket/
+│   │           │   │   └── WebSocketController.java
+│   │           │   │
+│   │           │   └── dto/
+│   │           │       ├── request/
+│   │           │       │   ├── RegisterDto.java
+│   │           │       │   ├── LoginDto.java
+│   │           │       │   └── MoveDto.java
+│   │           │       │
+│   │           │       └── response/
+│   │           │           ├── UserDto.java
+│   │           │           ├── TableDto.java
+│   │           │           └── GameStateDto.java
+│   │           │
+│   │           ├── service/
+│   │           │   ├── UserService.java
+│   │           │   ├── TableService.java
+│   │           │   ├── GameService.java
+│   │           │   ├── HandEvaluationService.java
+│   │           │   ├── ReplayService.java
+│   │           │   ├── StatisticsService.java
+│   │           │   ├── LobbyService.java
+│   │           │   │
+│   │           │   └── impl/
+│   │           │       ├── UserServiceImpl.java
+│   │           │       ├── GameServiceImpl.java
+│   │           │       └── HandEvaluationServiceImpl.java
+│   │           │
+│   │           ├── domain/
+│   │           │   ├── user/
+│   │           │   │   ├── User.java
+│   │           │   │   ├── Player.java
+│   │           │   │   ├── Spectator.java
+│   │           │   │   └── PlayerStatus.java
+│   │           │   │
+│   │           │   ├── game/
+│   │           │   │   ├── Table.java
+│   │           │   │   ├── Game.java
+│   │           │   │   ├── GameStatus.java
+│   │           │   │   ├── GameRound.java
+│   │           │   │   ├── BettingRound.java
+│   │           │   │   ├── BettingStage.java
+│   │           │   │   ├── Move.java
+│   │           │   │   └── MoveType.java
+│   │           │   │
+│   │           │   ├── card/
+│   │           │   │   ├── Card.java
+│   │           │   │   ├── Suit.java
+│   │           │   │   ├── Rank.java
+│   │           │   │   ├── Deck.java
+│   │           │   │   └── Hand.java
+│   │           │   │
+│   │           │   ├── poker/
+│   │           │   │   ├── HandEvaluator.java
+│   │           │   │   └── HandRank.java
+│   │           │   │
+│   │           │   ├── statistics/
+│   │           │   │   ├── Statistics.java
+│   │           │   │   └── GameResult.java
+│   │           │   │
+│   │           │   └── replay/
+│   │           │       ├── Replay.java
+│   │           │       └── GameAction.java
+│   │           │
+│   │           ├── repository/
+│   │           │   ├── UserRepository.java
+│   │           │   ├── TableRepository.java
+│   │           │   ├── GameRepository.java
+│   │           │   ├── StatisticsRepository.java
+│   │           │   └── ReplayRepository.java
+│   │           │
+│   │           ├── exception/
+│   │           │   ├── GlobalExceptionHandler.java
+│   │           │   ├── NotFoundException.java
+│   │           │   └── InvalidMoveException.java
+│   │           │
+│   │           ├── security/
+│   │           │   ├── JwtTokenProvider.java
+│   │           │   ├── JwtAuthenticationFilter.java
+│   │           │   └── UserDetailsServiceImpl.java
+│   │           │
+│   │           └── util/
+│   │               ├── CardUtils.java
+│   │               └── PokerHandUtils.java
+│   │
+│   └── resources/
+│       ├── application.yml
+│       └── db/migration/
+│           └── V1__init_schema.sql
+│
+└── test/
+    └── java/
+        └── com/
+            └── pokerapp/
+                ├── service/
+                │   ├── UserServiceTest.java
+                │   └── HandEvaluationServiceTest.java
+                │
+                └── integration/
+                    └── PokerGameFlowTest.java
