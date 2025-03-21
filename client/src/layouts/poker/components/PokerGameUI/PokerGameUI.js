@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Player from "../player/Player";
-import PokerTable from "../PokerTable";
-import { getPlayerPositions, getPlayerScaling } from "../../utils/positionUtils";
+import PokerTable from "../table/PokerTable";
+import { getPlayerPositions } from "../../utils/positionUtils";
 import { loadCardImage } from "../../utils/cardUtils";
 import LoadingSpinner from "../../utils/loadingSpinner/LoadingSpinner";
 import "./PokerGameUI.css";
@@ -16,9 +16,11 @@ const PokerGameUI = ({ isFullscreen, isMobile }) => {
   const [playerPositions, setPlayerPositions] = useState([]);
   const [pot, setPot] = useState(null);
   const [communityCards, setCommunityCards] = useState([]);
+  const [prevCommunityCards, setPrevCommunityCards] = useState([]);
   const [dealerIndex, setDealerIndex] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
+  const [turningCards, setTurningCards] = useState([]);
   const containerRef = useRef(null);
 
   // Counter for chart data sync
@@ -151,6 +153,29 @@ const PokerGameUI = ({ isFullscreen, isMobile }) => {
     setIsLoading(false);
   };
 
+  // Track community card changes to detect reveals
+  useEffect(() => {
+    // Check for newly revealed cards
+    if (prevCommunityCards.length > 0) {
+      const newTurningCards = [];
+
+      communityCards.forEach((card, index) => {
+        // Track newly revealed cards (cards that were previously face down or didn't exist)
+        if (card.faceUp &&
+            (index >= prevCommunityCards.length || !prevCommunityCards[index].faceUp)) {
+          newTurningCards.push(index);
+        }
+      });
+
+      if (newTurningCards.length > 0) {
+        setTurningCards(newTurningCards);
+      }
+    }
+
+    // Update the previous cards state
+    setPrevCommunityCards([...communityCards]);
+  }, [communityCards]);
+
   // Poll for game data
   const pollGameData = async () => {
     try {
@@ -212,6 +237,17 @@ const PokerGameUI = ({ isFullscreen, isMobile }) => {
     updatePlayerPositions();
   }, [players, isFullscreen]);
 
+  // Reset turning cards after animation completes
+  useEffect(() => {
+    if (turningCards.length > 0) {
+      const timer = setTimeout(() => {
+        setTurningCards([]);
+      }, 600); // Animation duration
+
+      return () => clearTimeout(timer);
+    }
+  }, [turningCards]);
+
   return (
     <div
       ref={containerRef}
@@ -249,12 +285,12 @@ const PokerGameUI = ({ isFullscreen, isMobile }) => {
             );
           })}
 
-          {/* Render community cards */}
+          {/* Render community cards with turn animation */}
           <div className="community-cards">
             {communityCards.map((card, index) => (
               <div
                 key={index}
-                className={`community-card-container ${card.faceUp ? 'face-up' : ''}`}
+                className="community-card-container"
                 style={{
                   // Stagger the card appearance slightly
                   animationDelay: `${index * 0.15}s`
@@ -263,7 +299,7 @@ const PokerGameUI = ({ isFullscreen, isMobile }) => {
                 <img
                   src={loadCardImage(card.rank, card.suit, card.faceUp)}
                   alt={card.faceUp ? `${card.rank} of ${card.suit}` : "Card back"}
-                  className="community-card"
+                  className={`community-card ${turningCards.includes(index) ? 'turning' : ''}`}
                 />
               </div>
             ))}

@@ -1,6 +1,6 @@
 import React from "react";
-import Card from "../Card";
-import ChipStack from "../ChipStack";
+import Card from "../card/Card";
+import ChipStack from "../chipStack/ChipStack";
 import "./Player.css";
 
 const Player = ({ player, position, isDealer, isFullscreen }) => {

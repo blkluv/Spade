@@ -1,5 +1,5 @@
 import React from "react";
-import { loadCardImage } from "../utils/cardUtils";
+import { loadCardImage } from "../../utils/cardUtils";
 import "./Card.css";
 
 const Card = ({ card, playerFolded, isActive }) => {

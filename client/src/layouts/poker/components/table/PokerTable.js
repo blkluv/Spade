@@ -1,7 +1,7 @@
 import React from "react";
 import "./PokerTable.css";
-import ChipStack from ".//ChipStack";
-import CustomPokerTable from "..//CustomPokerTable";
+import ChipStack from "../chipStack/ChipStack";
+import CustomPokerTable from "./CustomPokerTable";
 
 const PokerTable = ({ pot, children, isFullscreen }) => {
   // Format pot value with commas for thousands
