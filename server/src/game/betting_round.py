@@ -1,17 +1,18 @@
 from server.src.game.input import get_player_action
 from server.src.mediaplayer.sound_manager import play_community_card_sound
-
+#✅
+#⚠️
 
 class BettingRound:
     def __init__(self, players, pot, current_bet, small_blind_index, folded_players, active_players, bets,
                  update_display, GameRound, shared_resources, play_sound):
-        self.GameRound = GameRound
-        self.players = players
-        self.pot = pot
-        self.current_bet = current_bet
-        self.small_blind_index = small_blind_index
-        self.folded_players = folded_players
-        self.active_players = active_players
+        self.GameRound = GameRound #✅
+        self.players = players #✅
+        self.pot = pot #✅
+        self.current_bet = current_bet #✅
+        self.small_blind_index = small_blind_index #✅
+        self.folded_players = folded_players #✅
+        self.active_players = active_players #✅
         self.bets = bets
         self.last_raiser = None  # Keeps track of the last player to raise
         self.players_in_round = {player.name: False for player in self.active_players}

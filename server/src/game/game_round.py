@@ -15,12 +15,12 @@ class GameRound:
     def __init__(self, players, small_blind, big_blind, shared_resources):
         if len(players) < 2:
             raise ValueError("Mindestens zwei Spieler sind erforderlich.")
-        self.players = players
-        self.deck = Deck()
-        self.deck.shuffle()
-        self.community_cards = []
-        self.small_blind = small_blind
-        self.big_blind = big_blind
+        self.players = players #✅
+        self.deck = Deck() #⚠️
+        self.deck.shuffle() #⚠️
+        self.community_cards = [] #⚠️
+        self.small_blind = small_blind #✅
+        self.big_blind = big_blind #✅
         self.pot = 0
         self.current_bet = 0
         self.bets = {player.name: 0 for player in players}
