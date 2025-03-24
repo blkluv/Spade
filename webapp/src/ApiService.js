@@ -301,6 +301,15 @@ class ApiService {
       method: "DELETE",
     });
   }
+
+  /**
+   * Get the current players chips
+   * @returns {Promise} Current players chips
+   */
+  static async getCurrChips() {
+    const player = await this.apiCall("/players/me");
+    return player.chips;
+  }
 }
 
 export default ApiService;

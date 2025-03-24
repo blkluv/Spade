@@ -6,6 +6,7 @@ import LobbySystem from "./LobbySystem";
 import ApiService from "./ApiService";
 import ConfirmationModal from "./ConfirmationModal";
 import { FaTrash, FaSignOutAlt, FaShieldAlt } from "react-icons/fa";
+import apiService from "./ApiService";
 
 /**
  * HomePage component displays either the lobby or the poker table UI
@@ -38,6 +39,7 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
   const [currentTable, setCurrentTable] = useState(null);
   const [atTable, setAtTable] = useState(false);
   const [checkingTableStatus, setCheckingTableStatus] = useState(true);
+  const [currChips, setCurrChips] = useState([0]);
 
   // Error state
   const [error, setError] = useState("");
@@ -48,7 +50,13 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
   // Check if the user is at a table when the component mounts or user changes
   useEffect(() => {
     checkTableStatus();
+    updateChips();
   }, [user]);
+
+  // Update chips
+  const updateChips = async () => {
+    setCurrChips(await ApiService.getCurrChips())
+  }
 
   // Function to check table status using the dedicated endpoint
   const checkTableStatus = async () => {
@@ -494,7 +502,7 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
                   <div className="chips-display">
                     <span className="chips-label">Table Chips:</span>
                     <span className="chips-value">
-                  {currentTable?.currentBuyIn || (currentTable?.minBuyIn || 0)}
+                  {currChips}
                 </span>
                   </div>
                 </div>
