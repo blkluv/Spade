@@ -76,6 +76,33 @@ class ApiService {
     }
   }
 
+  /**
+   * Process avatar data from the backend response
+   * @param {*} data - Avatar data (base64 string or object with avatarBase64 property)
+   * @returns {string|null} URL for the avatar image or null if no valid data
+   */
+  static processAvatarData(data) {
+    // Handle null case
+    if (!data) return null;
+
+    // If it's already a complete data URL, return as is
+    if (typeof data === 'string') {
+      if (data.startsWith('data:')) {
+        return data;
+      }
+
+      // If it's a base64 string without the data: prefix
+      return `data:image/jpeg;base64,${data}`;
+    }
+
+    // If the data has avatarBase64 property (primary format)
+    if (data.avatarBase64) {
+      return `data:image/jpeg;base64,${data.avatarBase64}`;
+    }
+
+    return null;
+  }
+
   // ============ User API ============
 
   /**
@@ -170,18 +197,28 @@ class ApiService {
   static async uploadAvatar(formData) {
     const url = `${API_BASE_URL}/users/me/avatar`;
 
-    return fetch(url, {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${this.token}`,
-      },
-      body: formData,
-    }).then(response => {
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${this.token}`,
+          // Note: Do NOT set Content-Type here for multipart/form-data
+          // Browser will set it automatically with boundary parameter
+        },
+        body: formData,
+      });
+
       if (!response.ok) {
-        throw new Error("Failed to upload avatar");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload avatar");
       }
-      return response.json();
-    });
+
+      const userData = await response.json();
+      return userData;
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      throw error;
+    }
   }
 
   // ============ Player API ============

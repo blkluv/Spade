@@ -40,6 +40,15 @@ function App() {
     // Load user data if token exists
     const token = localStorage.getItem("token");
     if (token) {
+      // First check if we have cached user data in localStorage
+      const cachedUserData = localStorage.getItem("pokerUser");
+      if (cachedUserData) {
+        // Set initial user state from localStorage
+        const parsedUser = JSON.parse(cachedUserData);
+        setUser(parsedUser);
+      }
+
+      // Always load fresh data from API
       loadUserData();
     } else {
       setIsLoadingUser(false);
@@ -77,16 +86,24 @@ function App() {
     try {
       const userData = await ApiService.getCurrentUser();
 
-      // Store the complete user data including any player or table information
+      // Process avatar data from backend
+      let processedAvatarData = null;
+
+      // Check for the base64 encoded avatar
+      if (userData.avatarBase64) {
+        processedAvatarData = `data:image/jpeg;base64,${userData.avatarBase64}`;
+      }
+
+      // Create user object with processed avatar
       const userWithAvatar = {
         ...userData,
-        avatar: userData.avatar ? null : "default",
-        customAvatar: userData.avatar,
+        avatar: processedAvatarData ? null : "default",
+        customAvatar: processedAvatarData,
       };
 
       setUser(userWithAvatar);
 
-      // Store in localStorage for persistence
+      // Store complete user data in localStorage for persistence
       localStorage.setItem("pokerUser", JSON.stringify(userWithAvatar));
     } catch (error) {
       console.error("Failed to load user data:", error);
@@ -100,8 +117,20 @@ function App() {
 
   // Handle login from ProfilePage
   const handleLogin = (userData) => {
-    setUser(userData);
-    localStorage.setItem("pokerUser", JSON.stringify(userData));
+    // Process avatar data if it exists
+    let processedAvatarData = null;
+    if (userData.avatarBase64) {
+      processedAvatarData = `data:image/jpeg;base64,${userData.avatarBase64}`;
+    }
+
+    const userWithProcessedAvatar = {
+      ...userData,
+      avatar: processedAvatarData ? null : "default",
+      customAvatar: processedAvatarData,
+    };
+
+    setUser(userWithProcessedAvatar);
+    localStorage.setItem("pokerUser", JSON.stringify(userWithProcessedAvatar));
   };
 
   // Handle logout
@@ -118,125 +147,125 @@ function App() {
   };
 
   return (
-    <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
-      <header className="app-header">
-        <div className="logo" onClick={() => navigateTo("home")}>
-          <GiPokerHand className="logo-icon" />
-          <h1>SPADE</h1>
-        </div>
-
-        <div className="header-controls">
-          <div className="connection-indicator">
-            <BsCircleFill
-                className={`status-circle ${socketConnected ? "connected" : "disconnected"}`}
-            />
+      <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
+        <header className="app-header">
+          <div className="logo" onClick={() => navigateTo("home")}>
+            <GiPokerHand className="logo-icon" />
+            <h1>SPADE</h1>
           </div>
-          {user && (
-            <>
-              <button
-                  className={`nav-button ${currentPage === "home" ? "active" : ""}`}
-                  onClick={() => navigateTo("home")}
-                  aria-label="Home"
-              >
-                <FaHome className="nav-icon"/>
-              </button>
 
-              <button
-                  className={`nav-button ${currentPage === "calibration" ? "active" : ""}`}
-                  onClick={() => navigateTo("calibration")}
-                  aria-label="Calibration"
-              >
-                <FaCog className="nav-icon"/>
-              </button>
-            </>
-          )}
-
-          <button
-              className={`nav-button ${
-                  currentPage === "profile" ? "active" : ""
-              }`}
-              onClick={() => navigateTo("profile")}
-              aria-label="Profile"
-          >
-            {user ? (
-                <div
-                    className={`mini-avatar ${
-                        user.customAvatar ? "custom" : `avatar-${user.avatar}`
-                    }`}
-                    style={
-                      user.customAvatar
-                          ? {backgroundImage: `url(${user.customAvatar})`}
-                          : {}
-                    }
-                >
-                  {!user.customAvatar && user.username.charAt(0).toUpperCase()}
-                </div>
-            ) : (
-                <FaUser className="nav-icon"/>
-            )}
-          </button>
-
-          <button
-              className="theme-toggle"
-              onClick={() => setDarkMode(!darkMode)}
-              aria-label="Toggle theme"
-          >
-            {darkMode ? <FaSun/> : <FaMoon/>}
-          </button>
-        </div>
-      </header>
-
-      <main>
-        {isLoadingUser ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading...</p>
-          </div>
-        ) : !user && currentPage !== "profile" ? (
-          // If not logged in and not on profile page, show auth required message
-          <div className="auth-required">
-            <div className="auth-required-card">
-              <GiPokerHand className="auth-icon" />
-              <h2>Welcome to SPADE Poker</h2>
-              <p>Please log in or create an account to continue</p>
-              <button
-                className="primary-button"
-                onClick={() => navigateTo("profile")}
-              >
-                Login / Register
-              </button>
+          <div className="header-controls">
+            <div className="connection-indicator">
+              <BsCircleFill
+                  className={`status-circle ${socketConnected ? "connected" : "disconnected"}`}
+              />
             </div>
+            {user && (
+                <>
+                  <button
+                      className={`nav-button ${currentPage === "home" ? "active" : ""}`}
+                      onClick={() => navigateTo("home")}
+                      aria-label="Home"
+                  >
+                    <FaHome className="nav-icon"/>
+                  </button>
+
+                  <button
+                      className={`nav-button ${currentPage === "calibration" ? "active" : ""}`}
+                      onClick={() => navigateTo("calibration")}
+                      aria-label="Calibration"
+                  >
+                    <FaCog className="nav-icon"/>
+                  </button>
+                </>
+            )}
+
+            <button
+                className={`nav-button ${
+                    currentPage === "profile" ? "active" : ""
+                }`}
+                onClick={() => navigateTo("profile")}
+                aria-label="Profile"
+            >
+              {user ? (
+                  <div
+                      className={`mini-avatar ${
+                          user.customAvatar ? "custom" : `avatar-${user.avatar}`
+                      }`}
+                      style={
+                        user.customAvatar
+                            ? {backgroundImage: `url(${user.customAvatar})`}
+                            : {}
+                      }
+                  >
+                    {!user.customAvatar && user.username.charAt(0).toUpperCase()}
+                  </div>
+              ) : (
+                  <FaUser className="nav-icon"/>
+              )}
+            </button>
+
+            <button
+                className="theme-toggle"
+                onClick={() => setDarkMode(!darkMode)}
+                aria-label="Toggle theme"
+            >
+              {darkMode ? <FaSun/> : <FaMoon/>}
+            </button>
           </div>
-        ) : (
-          <>
-            {currentPage === "home" && (
-              <HomePage
-                socket={socket}
-                socketConnected={socketConnected}
-                darkMode={darkMode}
-                user={user}
-              />
-            )}
+        </header>
 
-            {currentPage === "calibration" && (
-              <CalibrationPage
-                socket={socket}
-                socketConnected={socketConnected}
-              />
-            )}
+        <main>
+          {isLoadingUser ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading...</p>
+              </div>
+          ) : !user && currentPage !== "profile" ? (
+              // If not logged in and not on profile page, show auth required message
+              <div className="auth-required">
+                <div className="auth-required-card">
+                  <GiPokerHand className="auth-icon" />
+                  <h2>Welcome to SPADE Poker</h2>
+                  <p>Please log in or create an account to continue</p>
+                  <button
+                      className="primary-button"
+                      onClick={() => navigateTo("profile")}
+                  >
+                    Login / Register
+                  </button>
+                </div>
+              </div>
+          ) : (
+              <>
+                {currentPage === "home" && (
+                    <HomePage
+                        socket={socket}
+                        socketConnected={socketConnected}
+                        darkMode={darkMode}
+                        user={user}
+                    />
+                )}
 
-            {currentPage === "profile" && (
-              <ProfilePage
-                user={user}
-                onLogin={handleLogin}
-                onLogout={handleLogout}
-                navigateToHome={() => navigateTo("home")}
-              />
-            )}
-          </>
-        )}
-      </main>
-    </div>
+                {currentPage === "calibration" && (
+                    <CalibrationPage
+                        socket={socket}
+                        socketConnected={socketConnected}
+                    />
+                )}
+
+                {currentPage === "profile" && (
+                    <ProfilePage
+                        user={user}
+                        onLogin={handleLogin}
+                        onLogout={handleLogout}
+                        navigateToHome={() => navigateTo("home")}
+                    />
+                )}
+              </>
+          )}
+        </main>
+      </div>
   );
 }
 
