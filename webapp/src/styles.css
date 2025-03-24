@@ -2619,3 +2619,76 @@ textarea:focus {
   line-height: 1.5;
 }
 
+/* Add these styles to your styles.css file */
+
+/* Table header with owner badge */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.table-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.owner-badge {
+  background: linear-gradient(to right, #f59e0b, #d97706);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Updated styles for CalibrationPage header to indicate owner functionality */
+.calibration-card h2 {
+  position: relative;
+  display: inline-block;
+  align-items: center;
+}
+
+.calibration-card h2::after {
+  content: '(Owner Only)';
+  position: absolute;
+  top: 0;
+  right: -110px;
+  font-size: 0.95rem;
+  font-weight: normal;
+  color: var(--warning-color);
+  background-color: rgba(245, 158, 11, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius);
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .calibration-card h2::after {
+    position: relative;
+    display: block;
+    right: auto;
+    top: auto;
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    align-items: center;
+  }
+}

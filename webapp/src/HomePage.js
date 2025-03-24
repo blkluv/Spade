@@ -1,9 +1,11 @@
+// Modified HomePage.js to pass table status updates to parent component
+
 import React, { useRef, useState, useEffect } from "react";
 import CamDiv from "./CamDiv";
 import LobbySystem from "./LobbySystem";
 import ApiService from "./ApiService";
 
-function HomePage({ socket, socketConnected, darkMode, user }) {
+function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange }) {
   // State for camera and scanning
   const webcamRef = useRef(null);
   const [cameraEnabled, setCameraEnabled] = useState(false);
@@ -54,6 +56,11 @@ function HomePage({ socket, socketConnected, darkMode, user }) {
       } else {
         setAtTable(false);
         setCurrentTable(null);
+      }
+
+      // Notify parent component about table status change
+      if (onTableStatusChange) {
+        onTableStatusChange();
       }
     } catch (error) {
       console.error("Error checking table status:", error);
@@ -175,10 +182,10 @@ function HomePage({ socket, socketConnected, darkMode, user }) {
 
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob(
-          (blob) =>
-            blob ? resolve(blob) : reject(new Error("Canvas is empty")),
-          "image/jpeg",
-          0.8
+            (blob) =>
+                blob ? resolve(blob) : reject(new Error("Canvas is empty")),
+            "image/jpeg",
+            0.8
         );
       });
 
@@ -186,12 +193,12 @@ function HomePage({ socket, socketConnected, darkMode, user }) {
 
       const response = await new Promise((resolve) => {
         socket.emit(
-          "frame",
-          {
-            n: 2,
-            image: arrayBuffer,
-          },
-          resolve
+            "frame",
+            {
+              n: 2,
+              image: arrayBuffer,
+            },
+            resolve
         );
       });
 
@@ -283,209 +290,214 @@ function HomePage({ socket, socketConnected, darkMode, user }) {
     };
 
     return (
-      <div
-        className={`poker-cards clickable`}
-        onClick={revealCards}
-        data-action-hint={hintText}
-      >
-        {cards.map((card, index) => {
-          const { rank, suit } = parseCard(card);
+        <div
+            className={`poker-cards clickable`}
+            onClick={revealCards}
+            data-action-hint={hintText}
+        >
+          {cards.map((card, index) => {
+            const { rank, suit } = parseCard(card);
 
-          return (
-            <div
-              key={index}
-              className={`poker-card ${!cardsRevealed ? "covered" : ""} ${
-                suit === "♥" || suit === "♦" ? "red-card" : "black-card"
-              }`}
-            >
-              {!cardsRevealed ? (
-                <div className="card-back">
-                  <span className="reveal-hint">Click to reveal</span>
+            return (
+                <div
+                    key={index}
+                    className={`poker-card ${!cardsRevealed ? "covered" : ""} ${
+                        suit === "♥" || suit === "♦" ? "red-card" : "black-card"
+                    }`}
+                >
+                  {!cardsRevealed ? (
+                      <div className="card-back">
+                        <span className="reveal-hint">Click to reveal</span>
+                      </div>
+                  ) : (
+                      <div className="card-content">
+                        <div className="card-rank">{rank}</div>
+                        <div className="card-suit">{suit}</div>
+                        <span className="hide-hint">Click to hide</span>
+                      </div>
+                  )}
                 </div>
-              ) : (
-                <div className="card-content">
-                  <div className="card-rank">{rank}</div>
-                  <div className="card-suit">{suit}</div>
-                  <span className="hide-hint">Click to hide</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
     );
   };
 
   // Show loading state while checking table status
   if (checkingTableStatus) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading table status...</p>
-      </div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading table status...</p>
+        </div>
     );
   }
 
   // Conditionally render either the lobby system or the poker table
   return (
-  <div className={`main-content ${!atTable ? "lobby-layout" : ""}`}>
-    {error && <div className="error-message global-error">{error}</div>}
+      <div className={`main-content ${!atTable ? "lobby-layout" : ""}`}>
+        {error && <div className="error-message global-error">{error}</div>}
 
-    {!atTable ? (
-      // Lobby System when not at a table
-      <LobbySystem
-        user={user}
-        onJoinTable={handleJoinTable}
-        currentTable={currentTable}
-        darkMode={darkMode}
-      />
-    ) : (
-        // Poker Table UI when at a table
-        <>
-          <div className="card-scanner">
-            <div className="table-header">
-              <h2>Table: {currentTable?.name}</h2>
-              <button className="leave-table-button" onClick={handleLeaveTable} disabled={isLoading}>
-                Leave Table
-              </button>
-            </div>
-
-            {cardsScanned ? (
-              <div className="scanned-result">
-                <h2>Your Cards</h2>
-                {renderCards()}
-
-                {/* Verification controls - only show after revealing */}
-                {cardsRevealed && !cardsConfirmed ? (
-                  <div className="card-verification">
-                    <p className="verification-text">Are these cards correct?</p>
-                    <div className="verification-buttons">
-                      <button
-                        className="confirm-button"
-                        onClick={handleConfirmCards}
-                      >
-                        Yes, Correct
-                      </button>
-                      <button className="retry-button" onClick={handleRetryScan}>
-                        No, Retry Scan
-                      </button>
-                    </div>
-                    <p className="toggle-hint">
-                      You can click the cards to hide them again
-                    </p>
-                  </div>
-                ) : cardsConfirmed ? (
-                  <>
-                    <p className="toggle-hint">Click cards to show or hide them</p>
-                    <button className="reset-button" onClick={resetScan}>
-                      Scan New Cards
+        {!atTable ? (
+            // Lobby System when not at a table
+            <LobbySystem
+                user={user}
+                onJoinTable={handleJoinTable}
+                currentTable={currentTable}
+                darkMode={darkMode}
+            />
+        ) : (
+            // Poker Table UI when at a table
+            <>
+              <div className="card-scanner">
+                <div className="table-header">
+                  <h2>Table: {currentTable?.name}</h2>
+                  <div className="table-info">
+                    {currentTable?.ownerId === user?.id && (
+                        <span className="owner-badge">Owner</span>
+                    )}
+                    <button className="leave-table-button" onClick={handleLeaveTable} disabled={isLoading}>
+                      Leave Table
                     </button>
-                  </>
-                ) : null}
-              </div>
-            ) : (
-              <div className="scanner-container">
-                {socketConnected ? (
-                <div className="scanner-overlay">
-                  <div className={`scan-area ${cameraEnabled ? "active" : ""}`}>
-                    <CamDiv
-                      cameraEnabled={cameraEnabled}
-                      webcamRef={webcamRef}
-                      onCapture={handleCapture}
-                    />
-                    {cameraEnabled && <div className="scanning-animation"></div>}
                   </div>
-                  <button
-                    className={`scan-button ${cameraEnabled ? "active" : ""}`}
-                    onClick={() => setCameraEnabled(!cameraEnabled)}
-                    disabled={isLoading}
-                  >
-                    {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
-                  </button>
-                </div>) :
-                <div className="connection-error">
-                Server connection failed. <br /> Please restart server or debug.
-                </div>}
-              </div>
-            )}
-          </div>
+                </div>
 
-          <div className="action-panel">
-            <h2>Player Actions</h2>
-            <div className="player-info">
-              <div className="chips-display">
-                <span className="chips-label">Table Chips:</span>
-                <span className="chips-value">
+                {cardsScanned ? (
+                    <div className="scanned-result">
+                      <h2>Your Cards</h2>
+                      {renderCards()}
+
+                      {/* Verification controls - only show after revealing */}
+                      {cardsRevealed && !cardsConfirmed ? (
+                          <div className="card-verification">
+                            <p className="verification-text">Are these cards correct?</p>
+                            <div className="verification-buttons">
+                              <button
+                                  className="confirm-button"
+                                  onClick={handleConfirmCards}
+                              >
+                                Yes, Correct
+                              </button>
+                              <button className="retry-button" onClick={handleRetryScan}>
+                                No, Retry Scan
+                              </button>
+                            </div>
+                            <p className="toggle-hint">
+                              You can click the cards to hide them again
+                            </p>
+                          </div>
+                      ) : cardsConfirmed ? (
+                          <>
+                            <p className="toggle-hint">Click cards to show or hide them</p>
+                            <button className="reset-button" onClick={resetScan}>
+                              Scan New Cards
+                            </button>
+                          </>
+                      ) : null}
+                    </div>
+                ) : (
+                    <div className="scanner-container">
+                      {socketConnected ? (
+                              <div className="scanner-overlay">
+                                <div className={`scan-area ${cameraEnabled ? "active" : ""}`}>
+                                  <CamDiv
+                                      cameraEnabled={cameraEnabled}
+                                      webcamRef={webcamRef}
+                                      onCapture={handleCapture}
+                                  />
+                                  {cameraEnabled && <div className="scanning-animation"></div>}
+                                </div>
+                                <button
+                                    className={`scan-button ${cameraEnabled ? "active" : ""}`}
+                                    onClick={() => setCameraEnabled(!cameraEnabled)}
+                                    disabled={isLoading}
+                                >
+                                  {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
+                                </button>
+                              </div>) :
+                          <div className="connection-error">
+                            Server connection failed. <br /> Please restart server or debug.
+                          </div>}
+                    </div>
+                )}
+              </div>
+
+              <div className="action-panel">
+                <h2>Player Actions</h2>
+                <div className="player-info">
+                  <div className="chips-display">
+                    <span className="chips-label">Table Chips:</span>
+                    <span className="chips-value">
                   {currentTable?.currentBuyIn || (currentTable?.minBuyIn || 0)}
                 </span>
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            <div className="action-buttons">
-              <button
-                className="action-button raise"
-                onClick={handleRaiseClick}
-                disabled={isLoading}
-              >
-                <span className="button-icon">♦</span>
-                <span>Raise</span>
-              </button>
-              <button
-                className="action-button call"
-                onClick={() => {
-                    setShowRaiseInput(false);
-                    sendAction("call")}}
-                disabled={isLoading}
-              >
-                <span className="button-icon">♣</span>
-                <span>Call</span>
-              </button>
-              <button
-                className="action-button check"
-                onClick={() => {
-                    setShowRaiseInput(false);
-                    sendAction("check")}}
-                disabled={isLoading}
-              >
-                <span className="button-icon">♥</span>
-                <span>Check</span>
-              </button>
-              <button
-                className="action-button fold"
-                onClick={() => {
-                    setShowRaiseInput(false);
-                    sendAction("fold");}}
-                disabled={isLoading}
-              >
-                <span className="button-icon">♠</span>
-                <span>Fold</span>
-              </button>
-            </div>
+                <div className="action-buttons">
+                  <button
+                      className="action-button raise"
+                      onClick={handleRaiseClick}
+                      disabled={isLoading}
+                  >
+                    <span className="button-icon">♦</span>
+                    <span>Raise</span>
+                  </button>
+                  <button
+                      className="action-button call"
+                      onClick={() => {
+                        setShowRaiseInput(false);
+                        sendAction("call")}}
+                      disabled={isLoading}
+                  >
+                    <span className="button-icon">♣</span>
+                    <span>Call</span>
+                  </button>
+                  <button
+                      className="action-button check"
+                      onClick={() => {
+                        setShowRaiseInput(false);
+                        sendAction("check")}}
+                      disabled={isLoading}
+                  >
+                    <span className="button-icon">♥</span>
+                    <span>Check</span>
+                  </button>
+                  <button
+                      className="action-button fold"
+                      onClick={() => {
+                        setShowRaiseInput(false);
+                        sendAction("fold");}}
+                      disabled={isLoading}
+                  >
+                    <span className="button-icon">♠</span>
+                    <span>Fold</span>
+                  </button>
+                </div>
 
-            {showRaiseInput && (
-              <div className="raise-input-container">
-                <input
-                  type="number"
-                  placeholder="Enter raise amount"
-                  value={raiseAmount}
-                  onChange={(e) => setRaiseAmount(e.target.value)}
-                />
-                <button onClick={handleConfirmRaise} disabled={isLoading}>
-                  Confirm
-                </button>
-              </div>
-            )}
+                {showRaiseInput && (
+                    <div className="raise-input-container">
+                      <input
+                          type="number"
+                          placeholder="Enter raise amount"
+                          value={raiseAmount}
+                          onChange={(e) => setRaiseAmount(e.target.value)}
+                      />
+                      <button onClick={handleConfirmRaise} disabled={isLoading}>
+                        Confirm
+                      </button>
+                    </div>
+                )}
 
-            {actionStatus && (
-              <div className="action-status">
-                {isLoading && <div className="loading-spinner"></div>}
-                <p>{actionStatus}</p>
+                {actionStatus && (
+                    <div className="action-status">
+                      {isLoading && <div className="loading-spinner"></div>}
+                      <p>{actionStatus}</p>
+                    </div>
+                )}
               </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+            </>
+        )}
+      </div>
   );
 }
 

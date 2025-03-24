@@ -1,3 +1,5 @@
+// Modified App.js to control Calibration tab visibility
+
 import React, { useState, useRef, useEffect } from "react";
 import { FaMoon, FaSun, FaHome, FaUser, FaCog } from "react-icons/fa";
 import { GiPokerHand } from "react-icons/gi";
@@ -31,6 +33,12 @@ function App() {
 
   // Socket state
   const [socketConnected, setSocketConnected] = useState(false);
+
+  // Table state - new states for table ownership
+  const [atTable, setAtTable] = useState(false);
+  const [currentTable, setCurrentTable] = useState(null);
+  const [isTableOwner, setIsTableOwner] = useState(false);
+  const [checkingTableStatus, setCheckingTableStatus] = useState(true);
 
   // Window width state for responsive header
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -69,6 +77,13 @@ function App() {
       window.removeEventListener('resize', handleResize);
     };
   }, [darkMode]);
+
+  // Load table status when user is loaded
+  useEffect(() => {
+    if (user) {
+      checkTableStatus();
+    }
+  }, [user]);
 
   // Setup socket connection listeners
   useEffect(() => {
@@ -130,6 +145,46 @@ function App() {
     }
   };
 
+  // Check if the user is at a table
+  const checkTableStatus = async () => {
+    if (!user) {
+      setAtTable(false);
+      setCurrentTable(null);
+      setIsTableOwner(false);
+      setCheckingTableStatus(false);
+      return;
+    }
+
+    setCheckingTableStatus(true);
+
+    try {
+      // Call the dedicated endpoint to get table status
+      const tableStatus = await ApiService.getCurrentTable();
+
+      if (tableStatus.isAtTable && tableStatus.tableId) {
+        setAtTable(true);
+
+        // Get table details if not included in the response
+        const tableDetails = tableStatus.table || await ApiService.getTableById(tableStatus.tableId);
+        setCurrentTable(tableDetails);
+
+        // Check if the current user is the owner of the table
+        setIsTableOwner(tableDetails.ownerId === user.id);
+      } else {
+        setAtTable(false);
+        setCurrentTable(null);
+        setIsTableOwner(false);
+      }
+    } catch (error) {
+      console.error("Error checking table status:", error);
+      setAtTable(false);
+      setCurrentTable(null);
+      setIsTableOwner(false);
+    } finally {
+      setCheckingTableStatus(false);
+    }
+  };
+
   // Handle login from ProfilePage
   const handleLogin = (userData) => {
     // Process avatar data if it exists
@@ -146,6 +201,9 @@ function App() {
 
     setUser(userWithProcessedAvatar);
     localStorage.setItem("pokerUser", JSON.stringify(userWithProcessedAvatar));
+
+    // Check table status after login
+    setTimeout(checkTableStatus, 500);
   };
 
   // Handle logout
@@ -154,6 +212,9 @@ function App() {
     setUser(null);
     localStorage.removeItem("pokerUser");
     setCurrentPage("home");
+    setAtTable(false);
+    setCurrentTable(null);
+    setIsTableOwner(false);
   };
 
   // Handle navigation
@@ -190,13 +251,16 @@ function App() {
                     <FaHome className="nav-icon"/>
                   </button>
 
-                  <button
-                      className={`nav-button ${currentPage === "calibration" ? "active" : ""}`}
-                      onClick={() => navigateTo("calibration")}
-                      aria-label="Calibration"
-                  >
-                    <FaCog className="nav-icon"/>
-                  </button>
+                  {/* Only show Calibration tab if user is at a table AND is the table owner */}
+                  {atTable && isTableOwner && (
+                      <button
+                          className={`nav-button ${currentPage === "calibration" ? "active" : ""}`}
+                          onClick={() => navigateTo("calibration")}
+                          aria-label="Calibration"
+                      >
+                        <FaCog className="nav-icon"/>
+                      </button>
+                  )}
                 </div>
             )}
 
@@ -264,13 +328,15 @@ function App() {
                         socketConnected={socketConnected}
                         darkMode={darkMode}
                         user={user}
+                        onTableStatusChange={checkTableStatus}
                     />
                 )}
 
-                {currentPage === "calibration" && (
+                {currentPage === "calibration" && atTable && isTableOwner && (
                     <CalibrationPage
                         socket={socket}
                         socketConnected={socketConnected}
+                        tableId={currentTable?.id}
                     />
                 )}
 
