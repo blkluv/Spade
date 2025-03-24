@@ -32,6 +32,9 @@ function App() {
   // Socket state
   const [socketConnected, setSocketConnected] = useState(false);
 
+  // Window width state for responsive header
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
   // Check theme preference and load user data on mount
   useEffect(() => {
     // Apply theme class to body
@@ -53,6 +56,18 @@ function App() {
     } else {
       setIsLoadingUser(false);
     }
+
+    // Add window resize listener for responsive header
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Clean up the event listener on unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, [darkMode]);
 
   // Setup socket connection listeners
@@ -146,12 +161,17 @@ function App() {
     setCurrentPage(page);
   };
 
+  // Determine if we should show the title based on window width
+  const isCompactMode = windowWidth < 600;
+
   return (
       <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
         <header className="app-header">
-          <div className="logo" onClick={() => navigateTo("home")}>
-            <GiPokerHand className="logo-icon" />
-            <h1>SPADE</h1>
+          <div className={`logo ${isCompactMode ? 'compact' : ''}`} onClick={() => navigateTo("home")}>
+            <div className="logo-icon-container">
+              <GiPokerHand className="logo-icon" />
+            </div>
+            <h1 className="logo-title">SPADE</h1>
           </div>
 
           <div className="header-controls">
@@ -161,7 +181,7 @@ function App() {
               />
             </div>
             {user && (
-                <>
+                <div className="nav-buttons">
                   <button
                       className={`nav-button ${currentPage === "home" ? "active" : ""}`}
                       onClick={() => navigateTo("home")}
@@ -177,7 +197,7 @@ function App() {
                   >
                     <FaCog className="nav-icon"/>
                   </button>
-                </>
+                </div>
             )}
 
             <button
