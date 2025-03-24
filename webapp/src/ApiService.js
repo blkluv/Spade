@@ -290,6 +290,17 @@ class ApiService {
       method: "POST",
     });
   }
+
+  /**
+   * Delete a table (owner only)
+   * @param {number} tableId - Table ID to delete
+   * @returns {Promise} Deleted table data
+   */
+  static async deleteTable(tableId) {
+    return this.apiCall(`/tables/${tableId}`, {
+      method: "DELETE",
+    });
+  }
 }
 
 export default ApiService;

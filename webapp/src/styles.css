@@ -2659,11 +2659,206 @@ textarea:focus {
   }
 }
 
+/* Add these styles to your styles.css file */
+
+/* Table action buttons with icons */
+.delete-table-button, .leave-table-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete button specific styles */
+.delete-table-button {
+  background: linear-gradient(to right, #ef4444, #b91c1c);
+  color: white;
+}
+
+.delete-table-button:hover {
+  transform: rotate(15deg);
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+}
+
+/* Leave button specific styles */
+.leave-table-button {
+  background: linear-gradient(to right, #475569, #334155);
+  color: white;
+}
+
+.leave-table-button:hover {
+  transform: translateX(2px);
+  box-shadow: 0 4px 6px rgba(51, 65, 85, 0.3);
+}
+
+/* Disabled states for both buttons */
+.delete-table-button:disabled,
+.leave-table-button:disabled {
+  background: linear-gradient(to right, #d1d5db, #9ca3af);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+/* Owner badge with shield icon */
+.owner-badge {
+  background: linear-gradient(to right, #f59e0b, #d97706);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  cursor: help;
+}
+
+.owner-icon {
+  font-size: 1.2rem;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.owner-badge::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(45deg,
+  rgba(255, 255, 255, 0) 0%,
+  rgba(255, 255, 255, 0.8) 50%,
+  rgba(255, 255, 255, 0) 100%);
+  animation: shine 2s infinite;
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced confirmation modal for deletions */
+.confirmation-modal {
+  max-width: 480px;
+}
+
+.confirmation-message {
+  background-color: rgba(239, 68, 68, 0.05);
+  border-left: 3px solid var(--danger-color);
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.confirmation-message p {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Danger button style */
+.primary-button.danger {
+  background: linear-gradient(to right, #ef4444, #b91c1c);
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+}
+
+.primary-button.danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Table info layout */
+.table-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Make responsive for mobile */
+@media (max-width: 640px) {
+  .table-info {
+    gap: 0.5rem;
+  }
+}
+
+/* Add these styles to your styles.css file */
+
+/* Table header with owner badge */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.table-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.owner-badge {
+  background: linear-gradient(to right, #f59e0b, #d97706);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.owner-badge::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(45deg,
+  rgba(255, 255, 255, 0) 0%,
+  rgba(255, 255, 255, 0.8) 50%,
+  rgba(255, 255, 255, 0) 100%);
+  animation: shine 2s infinite;
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
 /* Updated styles for CalibrationPage header to indicate owner functionality */
 .calibration-card h2 {
   position: relative;
   display: inline-block;
-  align-items: center;
 }
 
 .calibration-card h2::after {
@@ -2677,7 +2872,14 @@ textarea:focus {
   background-color: rgba(245, 158, 11, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: var(--border-radius);
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.calibration-card h2::after::before {
+  content: '🛡️';
+  font-size: 1rem;
 }
 
 @media (max-width: 768px) {
@@ -2689,6 +2891,186 @@ textarea:focus {
     margin-top: 0.5rem;
     text-align: center;
     font-size: 0.85rem;
-    align-items: center;
   }
+}
+
+/* Global error message */
+.error-message.global-error {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  min-width: 250px;
+  max-width: 90%;
+  border-radius: var(--border-radius);
+  animation: fadeIn 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* App loading container */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 1rem;
+}
+
+.loading-container .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+/* Table page specific styles */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.leave-table-button {
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.leave-table-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.player-info {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+}
+
+.chips-display {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.chips-label {
+  font-weight: 500;
+}
+
+.chips-value {
+  font-weight: 700;
+  color: var(--success-color);
+}
+
+/* Authentication tabs and forms */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 1rem;
+  text-align: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-tab.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.auth-tab:hover:not(.active) {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+.login-form,
+.register-form {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Slider input for player count */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.slider-container input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  outline: none;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.slider-container input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+}
+
+.slider-container input[type="range"]:hover::-webkit-slider-thumb,
+.slider-container input[type="range"]:focus::-webkit-slider-thumb {
+  background: var(--secondary-color);
+}
+
+.slider-container input[type="range"]:hover::-moz-range-thumb,
+.slider-container input[type="range"]:focus::-moz-range-thumb {
+  background: var(--secondary-color);
+}
+
+.slider-value {
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  color: var(--primary-color);
+}
+
+/* Button spinner */
+.button-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  display: inline-block;
 }
