@@ -58,11 +58,20 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
       // Get user details after login
       const userData = loginResponse.user;
 
-      onLogin({
+      // Process avatar data if it exists
+      let processedAvatarData = null;
+      if (userData.avatar) {
+        processedAvatarData = ApiService.processAvatarData(userData.avatar);
+      }
+
+      // Create proper user object with processed avatar
+      const userWithProcessedAvatar = {
         ...userData,
-        avatar: userData.avatar || "default",
-        customAvatar: userData.avatar ? null : userData.customAvatar,
-      });
+        avatar: processedAvatarData ? null : "default",
+        customAvatar: processedAvatarData,
+      };
+
+      onLogin(userWithProcessedAvatar);
 
       setSuccessMessage("Login successful!");
       setTimeout(() => {
@@ -102,8 +111,10 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
         password,
       });
 
+      // Process avatar data for new user (should have default)
+      const userData = loginResponse.user;
       onLogin({
-        ...loginResponse.user,
+        ...userData,
         avatar: "default",
         customAvatar: null,
       });
@@ -139,11 +150,15 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
         email,
       });
 
-      onLogin({
+      // If there was a custom avatar before, we need to keep it
+      // since the updatedUser object might not include avatar data
+      const userWithAvatar = {
         ...updatedUser,
         avatar: avatar,
         customAvatar: customAvatar,
-      });
+      };
+
+      onLogin(userWithAvatar);
 
       setIsEditing(false);
       setSuccessMessage("Profile updated successfully!");
@@ -193,7 +208,7 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
     }
   };
 
-  // Handle image upload
+  // Update the handleImageUpload function in ProfilePage.js
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -212,14 +227,11 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
 
     setIsLoading(true);
 
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setCustomAvatar(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
     try {
+      // Show local preview immediately for better UX
+      const localPreviewUrl = URL.createObjectURL(file);
+      setCustomAvatar(localPreviewUrl);
+
       // Upload to server if logged in
       if (user) {
         const formData = new FormData();
@@ -227,13 +239,34 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
 
         const updatedUser = await ApiService.uploadAvatar(formData);
 
-        onLogin({
+        // Process avatar data based on backend response format
+        let processedAvatarData = null;
+
+        // Check for the new avatarBase64 property
+        if (updatedUser.avatarBase64) {
+          processedAvatarData = `data:image/jpeg;base64,${updatedUser.avatarBase64}`;
+        }
+        // Fallback for legacy format
+        else if (updatedUser.avatar) {
+          processedAvatarData = ApiService.processAvatarData(updatedUser.avatar);
+        }
+
+        // Update user state with processed avatar
+        const userWithAvatar = {
           ...updatedUser,
-          customAvatar: URL.createObjectURL(file),
-        });
+          avatar: null, // Using custom avatar
+          customAvatar: processedAvatarData || localPreviewUrl, // Use processed data or local preview
+        };
+
+        onLogin(userWithAvatar);
 
         setSuccessMessage("Profile picture updated!");
         setTimeout(() => setSuccessMessage(""), 2000);
+
+        // If we successfully got processed data, clean up the local object URL
+        if (processedAvatarData) {
+          URL.revokeObjectURL(localPreviewUrl);
+        }
       }
     } catch (error) {
       setError("Failed to upload avatar: " + (error.message || "Unknown error"));
@@ -285,348 +318,348 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
   // If user is not logged in, show login/register form
   if (!user) {
     return (
-      <div className="profile-container">
-        <div className="profile-card">
-          <div className="auth-tabs">
-            <button
-              className={`auth-tab ${showLoginForm ? 'active' : ''}`}
-              onClick={() => setShowLoginForm(true)}
-            >
-              Login
-            </button>
-            <button
-              className={`auth-tab ${!showLoginForm ? 'active' : ''}`}
-              onClick={() => setShowLoginForm(false)}
-            >
-              Register
-            </button>
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-          {successMessage && (
-            <div className="success-message">{successMessage}</div>
-          )}
-
-          {showLoginForm ? (
-            // Login Form
-            <form onSubmit={handleLogin} className="login-form">
-              <div className="form-group">
-                <label htmlFor="username">Username</label>
-                <input
-                  type="text"
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
-              </div>
-
+        <div className="profile-container">
+          <div className="profile-card">
+            <div className="auth-tabs">
               <button
-                type="submit"
-                className="primary-button"
-                disabled={isLoading}
+                  className={`auth-tab ${showLoginForm ? 'active' : ''}`}
+                  onClick={() => setShowLoginForm(true)}
               >
-                {isLoading ? "Logging in..." : "Login"}
+                Login
               </button>
-            </form>
-          ) : (
-            // Registration Form
-            <form onSubmit={handleRegister} className="register-form">
-              <div className="form-group">
-                <label htmlFor="reg-username">Username</label>
-                <input
-                  type="text"
-                  id="reg-username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Choose a username"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="reg-email">Email</label>
-                <input
-                  type="email"
-                  id="reg-email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="reg-password">Password</label>
-                <input
-                  type="password"
-                  id="reg-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a password"
-                  disabled={isLoading}
-                />
-              </div>
-
               <button
-                type="submit"
-                className="primary-button"
-                disabled={isLoading}
+                  className={`auth-tab ${!showLoginForm ? 'active' : ''}`}
+                  onClick={() => setShowLoginForm(false)}
               >
-                {isLoading ? "Registering..." : "Create Account"}
+                Register
               </button>
-            </form>
-          )}
+            </div>
 
-          <div className="login-footer">
-            <p>
-              {showLoginForm
-                ? "Don't have an account? Click Register to create one."
-                : "Already have an account? Click Login to sign in."}
-            </p>
+            {error && <div className="error-message">{error}</div>}
+            {successMessage && (
+                <div className="success-message">{successMessage}</div>
+            )}
+
+            {showLoginForm ? (
+                // Login Form
+                <form onSubmit={handleLogin} className="login-form">
+                  <div className="form-group">
+                    <label htmlFor="username">Username</label>
+                    <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Enter your username"
+                        disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        disabled={isLoading}
+                    />
+                  </div>
+
+                  <button
+                      type="submit"
+                      className="primary-button"
+                      disabled={isLoading}
+                  >
+                    {isLoading ? "Logging in..." : "Login"}
+                  </button>
+                </form>
+            ) : (
+                // Registration Form
+                <form onSubmit={handleRegister} className="register-form">
+                  <div className="form-group">
+                    <label htmlFor="reg-username">Username</label>
+                    <input
+                        type="text"
+                        id="reg-username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Choose a username"
+                        disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="reg-email">Email</label>
+                    <input
+                        type="email"
+                        id="reg-email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="reg-password">Password</label>
+                    <input
+                        type="password"
+                        id="reg-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Create a password"
+                        disabled={isLoading}
+                    />
+                  </div>
+
+                  <button
+                      type="submit"
+                      className="primary-button"
+                      disabled={isLoading}
+                  >
+                    {isLoading ? "Registering..." : "Create Account"}
+                  </button>
+                </form>
+            )}
+
+            <div className="login-footer">
+              <p>
+                {showLoginForm
+                    ? "Don't have an account? Click Register to create one."
+                    : "Already have an account? Click Login to sign in."}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
     );
   }
 
   // User Profile View
   return (
-    <div className="profile-container">
-      <div className="profile-card">
-        <h2>Player Profile</h2>
+      <div className="profile-container">
+        <div className="profile-card">
+          <h2>Player Profile</h2>
 
-        {error && <div className="error-message">{error}</div>}
-        {successMessage && (
-          <div className="success-message">{successMessage}</div>
-        )}
+          {error && <div className="error-message">{error}</div>}
+          {successMessage && (
+              <div className="success-message">{successMessage}</div>
+          )}
 
-        <div className="profile-header">
-          <div className="avatar-container">
-            <div
-              className={`avatar ${
-                customAvatar ? "custom" : `avatar-${avatar}`
-              }`}
-              style={
-                customAvatar ? { backgroundImage: `url(${customAvatar})` } : {}
-              }
-            >
-              {!customAvatar && user.username.charAt(0).toUpperCase()}
+          <div className="profile-header">
+            <div className="avatar-container">
+              <div
+                  className={`avatar ${
+                      customAvatar ? "custom" : `avatar-${avatar}`
+                  }`}
+                  style={
+                    customAvatar ? { backgroundImage: `url(${customAvatar})` } : {}
+                  }
+              >
+                {!customAvatar && user.username.charAt(0).toUpperCase()}
 
-              <div className="avatar-overlay" onClick={triggerFileInput}>
-                <FaCamera className="camera-icon" />
-                <span>Change</span>
+                <div className="avatar-overlay" onClick={triggerFileInput}>
+                  <FaCamera className="camera-icon" />
+                  <span>Change</span>
+                </div>
               </div>
+
+              <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="file-input"
+                  disabled={isLoading}
+              />
             </div>
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              className="file-input"
-              disabled={isLoading}
-            />
+            {!isEditing && !isChangingPassword ? (
+                <div className="profile-info">
+                  <h3>{user.username}</h3>
+                  <p>{user.email}</p>
+                </div>
+            ) : null}
           </div>
 
-          {!isEditing && !isChangingPassword ? (
-            <div className="profile-info">
-              <h3>{user.username}</h3>
-              <p>{user.email}</p>
-            </div>
-          ) : null}
-        </div>
-
-        {isEditing ? (
-          <form onSubmit={handleSaveProfile} className="edit-profile-form">
-            <div className="form-group">
-              <label htmlFor="edit-username">Username</label>
-              <input
-                type="text"
-                id="edit-username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-email">Email</label>
-              <input
-                type="email"
-                id="edit-email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            {!customAvatar && (
-              <div className="form-group">
-                <label>Select Avatar</label>
-                <div className="avatar-selector">
-                  {availableAvatars.map((avatarOption) => (
-                    <div
-                      key={avatarOption}
-                      className={`avatar avatar-${avatarOption} ${
-                        avatar === avatarOption ? "selected" : ""
-                      }`}
-                      onClick={() => setAvatar(avatarOption)}
-                    >
-                      {username.charAt(0).toUpperCase()}
-                    </div>
-                  ))}
+          {isEditing ? (
+              <form onSubmit={handleSaveProfile} className="edit-profile-form">
+                <div className="form-group">
+                  <label htmlFor="edit-username">Username</label>
+                  <input
+                      type="text"
+                      id="edit-username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      disabled={isLoading}
+                  />
                 </div>
-              </div>
-            )}
 
-            {customAvatar && (
-              <div className="form-group">
-                <label>Profile Picture</label>
-                <div className="custom-avatar-preview">
-                  <img src={customAvatar} alt="Custom avatar" />
+                <div className="form-group">
+                  <label htmlFor="edit-email">Email</label>
+                  <input
+                      type="email"
+                      id="edit-email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                  />
+                </div>
+
+                {!customAvatar && (
+                    <div className="form-group">
+                      <label>Select Avatar</label>
+                      <div className="avatar-selector">
+                        {availableAvatars.map((avatarOption) => (
+                            <div
+                                key={avatarOption}
+                                className={`avatar avatar-${avatarOption} ${
+                                    avatar === avatarOption ? "selected" : ""
+                                }`}
+                                onClick={() => setAvatar(avatarOption)}
+                            >
+                              {username.charAt(0).toUpperCase()}
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+                )}
+
+                {customAvatar && (
+                    <div className="form-group">
+                      <label>Profile Picture</label>
+                      <div className="custom-avatar-preview">
+                        <img src={customAvatar} alt="Custom avatar" />
+                        <button
+                            type="button"
+                            className="remove-avatar-btn"
+                            onClick={removeCustomAvatar}
+                            disabled={isLoading}
+                        >
+                          Remove and use default
+                        </button>
+                      </div>
+                    </div>
+                )}
+
+                <div className="form-buttons">
                   <button
-                    type="button"
-                    className="remove-avatar-btn"
-                    onClick={removeCustomAvatar}
-                    disabled={isLoading}
+                      type="submit"
+                      className="primary-button"
+                      disabled={isLoading}
                   >
-                    Remove and use default
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setIsEditing(false)}
+                      disabled={isLoading}
+                  >
+                    Cancel
                   </button>
                 </div>
-              </div>
-            )}
+              </form>
+          ) : isChangingPassword ? (
+              <form onSubmit={handlePasswordChange} className="edit-profile-form">
+                <div className="form-group">
+                  <label htmlFor="current-password">Current Password</label>
+                  <input
+                      type="password"
+                      id="current-password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      disabled={isLoading}
+                  />
+                </div>
 
-            <div className="form-buttons">
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={isLoading}
-              >
-                {isLoading ? "Saving..." : "Save Changes"}
-              </button>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setIsEditing(false)}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : isChangingPassword ? (
-          <form onSubmit={handlePasswordChange} className="edit-profile-form">
-            <div className="form-group">
-              <label htmlFor="current-password">Current Password</label>
-              <input
-                type="password"
-                id="current-password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="new-password">New Password</label>
+                  <input
+                      type="password"
+                      id="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={isLoading}
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="new-password">New Password</label>
-              <input
-                type="password"
-                id="new-password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="confirm-password">Confirm New Password</label>
+                  <input
+                      type="password"
+                      id="confirm-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={isLoading}
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="confirm-password">Confirm New Password</label>
-              <input
-                type="password"
-                id="confirm-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-buttons">
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={isLoading}
-              >
-                {isLoading ? "Updating..." : "Update Password"}
-              </button>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setIsChangingPassword(false)}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <div className="stats-container">
-              <div className="stat-item">
+                <div className="form-buttons">
+                  <button
+                      type="submit"
+                      className="primary-button"
+                      disabled={isLoading}
+                  >
+                    {isLoading ? "Updating..." : "Update Password"}
+                  </button>
+                  <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setIsChangingPassword(false)}
+                      disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+          ) : (
+              <>
+                <div className="stats-container">
+                  <div className="stat-item">
                 <span className="stat-value">
                   {user.balance?.toLocaleString() || 1000}
                 </span>
-                <span className="stat-label">Chips</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{user.gamesPlayed || 0}</span>
-                <span className="stat-label">Games</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">{user.wins || 0}</span>
-                <span className="stat-label">Wins</span>
-              </div>
-            </div>
+                    <span className="stat-label">Chips</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-value">{user.gamesPlayed || 0}</span>
+                    <span className="stat-label">Games</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-value">{user.wins || 0}</span>
+                    <span className="stat-label">Wins</span>
+                  </div>
+                </div>
 
-            <div className="profile-actions">
-              <button
-                className="primary-button"
-                onClick={() => setIsEditing(true)}
-                disabled={isLoading}
-              >
-                Edit Profile
-              </button>
-              <button
-                className="secondary-button"
-                onClick={() => setIsChangingPassword(true)}
-                disabled={isLoading}
-              >
-                Change Password
-              </button>
-              <button
-                className="secondary-button danger"
-                onClick={handleLogout}
-                disabled={isLoading}
-              >
-                Logout
-              </button>
-            </div>
-          </>
-        )}
+                <div className="profile-actions">
+                  <button
+                      className="primary-button"
+                      onClick={() => setIsEditing(true)}
+                      disabled={isLoading}
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                      className="secondary-button"
+                      onClick={() => setIsChangingPassword(true)}
+                      disabled={isLoading}
+                  >
+                    Change Password
+                  </button>
+                  <button
+                      className="secondary-button danger"
+                      onClick={handleLogout}
+                      disabled={isLoading}
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+          )}
+        </div>
       </div>
-    </div>
   );
 }
 

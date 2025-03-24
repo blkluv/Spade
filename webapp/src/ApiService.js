@@ -76,6 +76,46 @@ class ApiService {
     }
   }
 
+  /**
+   * Process avatar data from different possible formats to a usable URL
+   * @param {*} avatarData - Avatar data from the server (byte array, base64, etc)
+   * @returns {string|null} URL for the avatar image or null if no valid data
+   */
+  static processAvatarData(data) {
+    // Handle null case
+    if (!data) return null;
+
+    // Case 1: If it's already a data URL, return as is
+    if (typeof data === 'string') {
+      if (data.startsWith('data:')) {
+        return data;
+      }
+
+      // Case 2: If it's a base64 string without the data: prefix
+      try {
+        // Test if it's valid base64
+        atob(data);
+        return `data:image/jpeg;base64,${data}`;
+      } catch (e) {
+        // Not valid base64, continue with other checks
+      }
+    }
+
+    // Case 3: Check if the data has avatarBase64 property (new backend format)
+    if (data.avatarBase64) {
+      return `data:image/jpeg;base64,${data.avatarBase64}`;
+    }
+
+    // Case 4: Legacy array format (byte array)
+    if (Array.isArray(data)) {
+      const binary = data.map(byte => String.fromCharCode(byte)).join('');
+      return `data:image/jpeg;base64,${btoa(binary)}`;
+    }
+
+    console.warn('Unprocessable avatar data:', data);
+    return null;
+  }
+
   // ============ User API ============
 
   /**
@@ -170,18 +210,28 @@ class ApiService {
   static async uploadAvatar(formData) {
     const url = `${API_BASE_URL}/users/me/avatar`;
 
-    return fetch(url, {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${this.token}`,
-      },
-      body: formData,
-    }).then(response => {
+    try {
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${this.token}`,
+          // Note: Do NOT set Content-Type here for multipart/form-data
+          // Browser will set it automatically with boundary parameter
+        },
+        body: formData,
+      });
+
       if (!response.ok) {
-        throw new Error("Failed to upload avatar");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload avatar");
       }
-      return response.json();
-    });
+
+      const userData = await response.json();
+      return userData;
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      throw error;
+    }
   }
 
   // ============ Player API ============
