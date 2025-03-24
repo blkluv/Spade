@@ -314,14 +314,6 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
                   </div>
                 </div>
 
-                {/* Additional game info - randomized for demo */}
-                {index % 3 === 0 && (
-                  <div className="game-info">
-                    <div className="game-type">Texas Hold'em</div>
-                    <div className="blinds">Blinds: 5/10</div>
-                  </div>
-                )}
-
                 <div className="table-actions">
                   <button
                     className="join-button"

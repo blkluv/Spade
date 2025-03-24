@@ -1921,26 +1921,6 @@ body {
   color: var(--success-color);
 }
 
-/* Game info section */
-.game-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  background-color: rgba(106, 17, 203, 0.08);
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--border-radius);
-  margin-top: 0.5rem;
-}
-
-.game-type {
-  font-weight: 500;
-  color: var(--primary-color);
-}
-
-.blinds {
-  color: var(--text-secondary);
-}
-
 /* Enhanced description with consistent height */
 .table-description {
   font-size: 0.95rem;
