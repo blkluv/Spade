@@ -328,18 +328,18 @@ function HomePage({ socket, socketConnected, darkMode, user }) {
 
   // Conditionally render either the lobby system or the poker table
   return (
-    <div className="main-content">
-      {error && <div className="error-message global-error">{error}</div>}
+  <div className={`main-content ${!atTable ? "lobby-layout" : ""}`}>
+    {error && <div className="error-message global-error">{error}</div>}
 
-      {!atTable ? (
-        // Lobby System when not at a table
-        <LobbySystem
-          user={user}
-          onJoinTable={handleJoinTable}
-          currentTable={currentTable}
-          darkMode={darkMode}
-        />
-      ) : (
+    {!atTable ? (
+      // Lobby System when not at a table
+      <LobbySystem
+        user={user}
+        onJoinTable={handleJoinTable}
+        currentTable={currentTable}
+        darkMode={darkMode}
+      />
+    ) : (
         // Poker Table UI when at a table
         <>
           <div className="card-scanner">

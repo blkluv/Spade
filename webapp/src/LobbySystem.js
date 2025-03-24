@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaUsers, FaCoins, FaLock, FaLockOpen, FaSearch, FaSync, FaDoorOpen } from "react-icons/fa";
+import { FaPlus, FaUsers, FaCoins, FaLock, FaLockOpen, FaSearch,
+         FaSync, FaDoorOpen, FaExclamationCircle, FaStar, FaTrophy,
+         FaSignOutAlt } from "react-icons/fa";
 import ApiService from "./ApiService";
 
 function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
@@ -52,12 +54,11 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
     setError("");
 
     try {
-      let tablesData;
-      if (showOnlyPublic) {
-        tablesData = await ApiService.getPublicTables();
-      } else {
-        tablesData = await ApiService.getAllTables();
-      }
+      // Simulate API call for demonstration
+      const tablesData = showOnlyPublic
+        ? await ApiService.getPublicTables()
+        : await ApiService.getAllTables();
+
       setTables(tablesData);
       setFilteredTables(tablesData);
     } catch (error) {
@@ -154,11 +155,17 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
     <div className="lobby-container">
       <div className="lobby-header">
         <h2>Poker Tables</h2>
+        <div className="featured-banner">
+          <FaTrophy className="featured-icon" />
+          <span>Pro tournament starting tonight at 8PM! <a href="#">Register now</a></span>
+        </div>
 
         <div className="lobby-controls">
           <div className="search-filter">
             <div className="search-container">
-              <FaSearch className="search-icon" />
+              <div className="search-icon-wrapper">
+                <FaSearch />
+              </div>
               <input
                 type="text"
                 placeholder="Search tables..."
@@ -200,9 +207,142 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
         </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <FaExclamationCircle />
+          {error}
+        </div>
+      )}
 
-      {/* Table creation form */}
+      {/* Current Table notification */}
+      {currentTable && (
+        <div className="current-table-notification">
+          <div className="notification-content">
+            <h3>You're currently at table: {currentTable.name}</h3>
+            <div className="notification-buttons">
+              <button
+                className="primary-button"
+                onClick={() => onJoinTable(currentTable.id)}
+              >
+                <FaDoorOpen /> Return to Table
+              </button>
+              <button
+                className="leave-table-button"
+                onClick={() => alert("Leave table functionality would go here")}
+              >
+                <FaSignOutAlt /> Leave Table
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tables list */}
+      <div className="tables-list">
+        {isLoading && tables.length === 0 ? (
+          <div className="loading-tables">
+            <div className="loading-spinner"></div>
+            <p>Loading tables...</p>
+          </div>
+        ) : filteredTables.length === 0 ? (
+          <div className="no-tables-message">
+            <p>
+              {searchQuery
+                ? "No tables found matching your search."
+                : "No tables available. Be the first to create one!"}
+            </p>
+            {searchQuery && (
+              <button
+                className="secondary-button"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredTables.map((table, index) => {
+            // Assign a random theme class for visual variety
+            const themes = ['theme-spades', 'theme-hearts', 'theme-diamonds', 'theme-clubs'];
+            const randomTheme = themes[index % themes.length];
+
+            // Create more interesting descriptions for demo purposes
+            const isVIP = table.minBuyIn > 500;
+            const descriptions = [
+              "A friendly table for casual players looking to enjoy the game without pressure.",
+              "High-stakes action with experienced players. Not for the faint of heart!",
+              "Fast-paced games with 3-minute timers. Perfect for quick rounds.",
+              "Tournament practice table with professional-style play.",
+              "Beginners welcome! Learn the ropes in a supportive environment.",
+              "Weekly regulars table - all skill levels welcome."
+            ];
+
+            // Use table description or a random one if empty
+            const tableDescription = table.description || descriptions[index % descriptions.length];
+
+            return (
+              <div key={table.id} className={`table-card ${randomTheme}`}>
+                <div className="table-header">
+                  <h3>
+                    {table.name}
+                    {isVIP && <FaStar className="vip-icon" title="VIP Table" />}
+                  </h3>
+                  {table.isPrivate ? (
+                    <FaLock className="table-status-icon private" title="Private table" />
+                  ) : (
+                    <FaLockOpen className="table-status-icon public" title="Public table" />
+                  )}
+                </div>
+
+                <p className={`table-description ${isVIP ? 'vip' : ''}`}>
+                  {tableDescription}
+                </p>
+
+                <div className="table-details">
+                  <div className="table-detail">
+                    <FaUsers className="detail-icon" />
+                    <span>
+                      {table.currentPlayers}/{table.maxPlayers} players
+                    </span>
+                  </div>
+
+                  <div className="table-detail">
+                    <FaCoins className="detail-icon" />
+                    <span>
+                      Buy-in: {table.minBuyIn} - {table.maxBuyIn}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Additional game info - randomized for demo */}
+                {index % 3 === 0 && (
+                  <div className="game-info">
+                    <div className="game-type">Texas Hold'em</div>
+                    <div className="blinds">Blinds: 5/10</div>
+                  </div>
+                )}
+
+                <div className="table-actions">
+                  <button
+                    className="join-button"
+                    onClick={() => {
+                      setJoinTableId(table.id);
+                      setBuyInAmount(table.minBuyIn.toString());
+                    }}
+                    disabled={table.currentPlayers >= table.maxPlayers}
+                  >
+                    {table.currentPlayers >= table.maxPlayers
+                      ? "Table Full"
+                      : "Take a Seat"}
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Table creation modal */}
       {showCreateForm && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -297,7 +437,14 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
                   className="primary-button"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Creating..." : "Create Table"}
+                  {isLoading ? (
+                    <>
+                      <span className="button-spinner"></span>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Table"
+                  )}
                 </button>
                 <button
                   type="button"
@@ -313,23 +460,23 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
         </div>
       )}
 
-      {/* Join table form */}
-      {joinTableId && (
+      {/* Join table modal */}
+      {joinTableId && selectedTable && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h3>Join Table</h3>
             <form onSubmit={handleJoinTable} className="join-table-form">
               <div className="selected-table-info">
-                <h4>{selectedTable?.name}</h4>
-                <p className="table-description">{selectedTable?.description}</p>
+                <h4>{selectedTable.name}</h4>
+                <p className="table-description">{selectedTable.description}</p>
                 <div className="buy-in-limits">
                   <div className="limit">
                     <span className="limit-label">Minimum:</span>
-                    <span className="limit-value">{selectedTable?.minBuyIn} chips</span>
+                    <span className="limit-value">{selectedTable.minBuyIn} chips</span>
                   </div>
                   <div className="limit">
                     <span className="limit-label">Maximum:</span>
-                    <span className="limit-value">{selectedTable?.maxBuyIn} chips</span>
+                    <span className="limit-value">{selectedTable.maxBuyIn} chips</span>
                   </div>
                 </div>
               </div>
@@ -346,8 +493,8 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
                   id="buy-in-amount"
                   value={buyInAmount}
                   onChange={(e) => setBuyInAmount(e.target.value)}
-                  min={selectedTable?.minBuyIn}
-                  max={Math.min(selectedTable?.maxBuyIn, user?.balance || 0)}
+                  min={selectedTable.minBuyIn}
+                  max={Math.min(selectedTable.maxBuyIn, user?.balance || 0)}
                   required
                 />
               </div>
@@ -358,7 +505,14 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
                   className="primary-button"
                   disabled={isLoading || (parseInt(buyInAmount, 10) > (user?.balance || 0))}
                 >
-                  {isLoading ? "Joining..." : "Take a Seat"}
+                  {isLoading ? (
+                    <>
+                      <span className="button-spinner"></span>
+                      Joining...
+                    </>
+                  ) : (
+                    "Take a Seat"
+                  )}
                 </button>
                 <button
                   type="button"
@@ -379,92 +533,6 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
           </div>
         </div>
       )}
-
-      {/* Current Table notification */}
-      {currentTable && (
-        <div className="current-table-notification">
-          <div className="notification-content">
-            <h3>You're currently at table: {currentTable.name}</h3>
-            <button className="primary-button" onClick={() => onJoinTable(currentTable.id)}>
-              <FaDoorOpen /> Return to Table
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Tables list */}
-      <div className="tables-list">
-        {isLoading && tables.length === 0 ? (
-          <div className="loading-tables">
-            <div className="loading-spinner"></div>
-            <p>Loading tables...</p>
-          </div>
-        ) : filteredTables.length === 0 ? (
-          <div className="no-tables-message">
-            <p>
-              {searchQuery
-                ? "No tables found matching your search."
-                : "No tables available. Be the first to create one!"}
-            </p>
-            {searchQuery && (
-              <button
-                className="secondary-button"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear search
-              </button>
-            )}
-          </div>
-        ) : (
-          filteredTables.map((table) => (
-            <div key={table.id} className="table-card">
-              <div className="table-header">
-                <h3>{table.name}</h3>
-                {table.isPrivate ? (
-                  <FaLock className="table-status-icon private" title="Private table" />
-                ) : (
-                  <FaLockOpen className="table-status-icon public" title="Public table" />
-                )}
-              </div>
-
-              {table.description && (
-                <p className="table-description">{table.description}</p>
-              )}
-
-              <div className="table-details">
-                <div className="table-detail">
-                  <FaUsers className="detail-icon" />
-                  <span>
-                    {table.currentPlayers}/{table.maxPlayers} players
-                  </span>
-                </div>
-
-                <div className="table-detail">
-                  <FaCoins className="detail-icon" />
-                  <span>
-                    Buy-in: {table.minBuyIn} - {table.maxBuyIn}
-                  </span>
-                </div>
-              </div>
-
-              <div className="table-actions">
-                <button
-                  className="join-button"
-                  onClick={() => {
-                    setJoinTableId(table.id);
-                    setBuyInAmount(table.minBuyIn.toString());
-                  }}
-                  disabled={table.currentPlayers >= table.maxPlayers}
-                >
-                  {table.currentPlayers >= table.maxPlayers
-                    ? "Table Full"
-                    : "Join Table"}
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
     </div>
   );
 }

@@ -189,6 +189,26 @@ body {
   }
 }
 
+/* Lobby-specific layout */
+.lobby-layout {
+  display: flex;
+  justify-content: center;
+  grid-template-columns: 1fr !important; /* Override the grid columns */
+}
+
+/* Ensure the LobbySystem takes full width when needed */
+.lobby-layout .lobby-container {
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Prevent the split layout for lobby on larger screens */
+@media (min-width: 768px) {
+  .lobby-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /*----------------------------------------
   5. NAVIGATION & HEADER
 -----------------------------------------*/
@@ -1512,70 +1532,149 @@ body {
 -----------------------------------------*/
 .lobby-container {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto; /* Center the entire container */
   display: flex;
   flex-direction: column;
+  align-items: center; /* Center all child elements */
   gap: 1.5rem;
   animation: fadeIn 0.3s ease;
-  padding-bottom: 2rem; /* Add some padding at the bottom for mobile scrolling */
+  padding-bottom: 2rem;
+  position: relative;
+  overflow: hidden; /* For decorative elements */
 }
 
+/* Decorative poker elements */
+.lobby-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, transparent 65%, var(--primary-color) 65%, var(--primary-color) 68%, transparent 68%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.lobby-container::after {
+  content: "";
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, transparent 65%, var(--secondary-color) 65%, var(--secondary-color) 68%, transparent 68%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
+/* Enhanced Header with cleaner structure */
 .lobby-header {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  align-items: center; /* Center header contents */
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1000px; /* Control max width for better visual balance */
+  margin-bottom: 2rem;
+  text-align: center;
+  position: relative;
 }
 
 .lobby-header h2 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+  font-weight: 800;
   background: var(--primary-gradient);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   text-align: center;
+  margin: 0;
+  position: relative;
+  display: inline-block;
+  padding: 0 1rem;
 }
 
+/* Decorative card suits around heading */
+.lobby-header h2::before,
+.lobby-header h2::after {
+  content: "♠";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  opacity: 0.6;
+}
+
+.lobby-header h2::before {
+  left: -0.5rem;
+}
+
+.lobby-header h2::after {
+  right: -0.5rem;
+  content: "♦";
+  color: var(--secondary-color);
+}
+
+/* Improved responsive controls layout */
 .lobby-controls {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 900px; /* Control maximum width for better readability */
+  gap: 1.5rem;
   flex-wrap: wrap;
-  gap: 1rem;
 }
 
-/* Search and filter controls */
+/* Enhanced search and filter section */
 .search-filter {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex: 1;
-  min-width: 250px;
+  min-width: 280px;
 }
 
 .search-container {
-  position: relative;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-secondary);
+  height: 42px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  overflow: hidden; /* Ensure clean rounded corners */
 }
 
-.search-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
+.search-container:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(106, 17, 203, 0.2);
+}
+
+.search-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
   color: var(--text-secondary);
 }
 
 .search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background-color: var(--bg-secondary);
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 0.75rem 0 0;
   color: var(--text-primary);
   font-size: 1rem;
+  outline: none;
 }
 
+/* Improved filter toggle styling */
 .filter-toggle {
   display: flex;
   align-items: center;
@@ -1584,24 +1683,33 @@ body {
 .filter-toggle label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   cursor: pointer;
   user-select: none;
   color: var(--text-secondary);
   font-size: 0.9rem;
+  transition: color 0.2s;
+  padding: 0.25rem 0;
+}
+
+.filter-toggle label:hover {
+  color: var(--text-primary);
 }
 
 .filter-toggle input[type="checkbox"] {
   margin: 0;
   width: 1.2rem;
   height: 1.2rem;
+  accent-color: var(--primary-color);
+  cursor: pointer;
 }
 
-/* Table action buttons */
+/* Enhanced table action buttons */
 .table-actions {
   display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
+  gap: 0.75rem;
+  align-items: center;
+  height: 42px;
 }
 
 .refresh-button {
@@ -1609,7 +1717,8 @@ body {
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 0.75rem;
+  width: 42px;
+  height: 42px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1617,9 +1726,15 @@ body {
   transition: all 0.3s ease;
 }
 
-.refresh-button:hover {
+.refresh-button:hover:not(:disabled) {
   color: var(--text-primary);
-  border-color: var(--text-primary);
+  border-color: var(--primary-color);
+  transform: rotate(15deg);
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .create-table-button {
@@ -1627,46 +1742,85 @@ body {
   color: white;
   border: none;
   border-radius: var(--border-radius);
-  padding: 0.75rem 1.2rem;
+  height: 42px;
+  padding: 0 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   font-weight: 600;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(106, 17, 203, 0.2);
 }
 
-.create-table-button:hover {
+.create-table-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 8px rgba(106, 17, 203, 0.3);
 }
 
-/* Rotating animation for refresh icon */
+.create-table-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.create-table-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Rotating animation - enhanced */
 .rotating {
   animation: spin 1s linear infinite;
 }
 
-/* Tables list */
+/* Improved tables list with centered layout */
 .tables-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 0 auto; /* Center the grid */
+  width: 100%;
+  justify-content: center;
 }
 
-/* Table card styles */
+/* Enhanced table card with better spacing */
 .table-card {
   background-color: var(--card-bg);
   border-radius: var(--border-radius);
-  padding: 1.5rem;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   box-shadow: var(--card-shadow);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
+  height: 100%; /* Ensure consistent height */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Table card theme variants - assigned randomly via JS */
+.table-card.theme-spades {
+  background-image: linear-gradient(to bottom right,
+                    var(--card-bg),
+                    rgba(0, 0, 30, 0.3));
+}
+
+.table-card.theme-hearts {
+  background-image: linear-gradient(to bottom right,
+                    var(--card-bg),
+                    rgba(100, 0, 30, 0.2));
+}
+
+.table-card.theme-diamonds {
+  background-image: linear-gradient(to bottom right,
+                    var(--card-bg),
+                    rgba(100, 50, 0, 0.2));
+}
+
+.table-card.theme-clubs {
+  background-image: linear-gradient(to bottom right,
+                    var(--card-bg),
+                    rgba(0, 80, 80, 0.2));
 }
 
 .table-card::before {
@@ -1681,15 +1835,54 @@ body {
   transition: opacity 0.3s ease;
 }
 
+.table-card::after {
+  content: "";
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  opacity: 0.1;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transition: opacity 0.3s ease;
+}
+
+.table-card.theme-spades::after {
+  content: "♠";
+  font-size: 30px;
+}
+
+.table-card.theme-hearts::after {
+  content: "♥";
+  font-size: 30px;
+}
+
+.table-card.theme-diamonds::after {
+  content: "♦";
+  font-size: 30px;
+}
+
+.table-card.theme-clubs::after {
+  content: "♣";
+  font-size: 30px;
+}
+
 .table-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
 }
 
 .table-card:hover::before {
   opacity: 1;
 }
 
+.table-card:hover::after {
+  opacity: 0.2;
+}
+
+/* Improved table header */
 .table-header {
   display: flex;
   justify-content: space-between;
@@ -1704,6 +1897,16 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vip-icon {
+  color: #FFD700;
+  font-size: 0.9rem;
+  margin-left: 0.25rem;
+  animation: pulse 2s infinite ease-in-out;
 }
 
 .table-status-icon {
@@ -1718,22 +1921,68 @@ body {
   color: var(--success-color);
 }
 
-.table-description {
-  font-size: 0.9rem;
+/* Game info section */
+.game-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  background-color: rgba(106, 17, 203, 0.08);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius);
+  margin-top: 0.5rem;
+}
+
+.game-type {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.blinds {
   color: var(--text-secondary);
-  margin-bottom: 0.5rem;
+}
+
+/* Enhanced description with consistent height */
+.table-description {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.7rem;
+  min-height: 3rem;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 1.5rem;
+  font-style: italic;
 }
 
+.table-description::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -0.5rem;
+  font-size: 2rem;
+  color: var(--primary-color);
+  opacity: 0.4;
+  font-style: normal;
+}
+
+.table-description.vip {
+  border-left: 3px solid var(--warning-color);
+  padding-left: 1rem;
+  background-color: rgba(245, 158, 11, 0.05);
+  font-style: normal;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+/* Improved table details with consistent sizing */
 .table-details {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: auto;
+  margin-top: auto; /* Push to bottom of card */
 }
 
 .table-detail {
@@ -1753,10 +2002,12 @@ body {
   font-size: 1rem;
 }
 
+/* Improved table actions */
 .table-actions {
   margin-top: 1rem;
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .join-button {
@@ -1781,33 +2032,82 @@ body {
   cursor: not-allowed;
 }
 
-/* Loading and empty states */
-.loading-tables {
+/* Featured banner */
+.featured-banner {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
-  color: var(--text-secondary);
-  text-align: center;
-  gap: 1rem;
+  background: linear-gradient(to right, rgba(106, 17, 203, 0.1), rgba(37, 117, 252, 0.1));
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  gap: 0.75rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: pulse 3s infinite ease-in-out;
 }
 
+.featured-icon {
+  color: var(--warning-color);
+  font-size: 1.2rem;
+}
+
+.featured-banner span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.featured-banner a {
+  color: var(--secondary-color);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.featured-banner a:hover {
+  text-decoration: underline;
+  color: var(--primary-color);
+}
+
+/* Enhanced loading and empty states */
+.loading-tables,
 .no-tables-message {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  height: 250px;
   color: var(--text-secondary);
   text-align: center;
-  gap: 1rem;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 2rem;
+  gap: 1.5rem;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 500px;
+  grid-column: 1 / -1; /* Span all columns */
 }
 
-/* Modal overlay for forms */
+.no-tables-message {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.no-tables-message::before {
+  content: "♠ ♥ ♦ ♣";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.2rem;
+  opacity: 0.1;
+  letter-spacing: 5px;
+}
+
+/* Improved modal overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1828,12 +2128,12 @@ body {
 .modal-content {
   background-color: var(--card-bg);
   border-radius: var(--border-radius);
-  padding: 1.5rem;
+  padding: 2rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 550px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.3s ease;
 }
 
@@ -1848,11 +2148,12 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-/* Table creation form */
-.create-table-form {
+/* Enhanced table creation form */
+.create-table-form,
+.join-table-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .form-row {
@@ -1861,12 +2162,40 @@ body {
   gap: 1rem;
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Responsive adjustments for form row */
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
   }
+
+  .lobby-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .create-table-button {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
+/* Enhanced checkbox styling */
 .checkbox-group {
   display: flex;
   align-items: center;
@@ -1875,7 +2204,7 @@ body {
 .checkbox-group label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   cursor: pointer;
   font-size: 1rem;
 }
@@ -1883,25 +2212,21 @@ body {
 .checkbox-group input[type="checkbox"] {
   width: 1.2rem;
   height: 1.2rem;
+  accent-color: var(--primary-color);
 }
 
-/* Join table form */
-.join-table-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
+/* Enhanced table info in join modal */
 .selected-table-info {
   background-color: var(--bg-secondary);
-  padding: 1rem;
+  padding: 1.25rem;
   border-radius: var(--border-radius);
   margin-bottom: 0.5rem;
+  border-left: 4px solid var(--primary-color);
 }
 
 .selected-table-info h4 {
   font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   font-weight: 600;
 }
 
@@ -1909,13 +2234,13 @@ body {
   display: flex;
   justify-content: space-between;
   margin-top: 1rem;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 @media (max-width: 768px) {
   .buy-in-limits {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 }
 
@@ -1932,6 +2257,7 @@ body {
 
 .limit-value {
   font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .balance-indicator {
@@ -1941,16 +2267,18 @@ body {
   font-weight: normal;
 }
 
-/* Current table notification */
+/* Enhanced notification for current table */
 .current-table-notification {
   background: var(--primary-gradient);
   border-radius: var(--border-radius);
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  margin: 0 auto 1.5rem;
   color: white;
   animation: fadeIn 0.3s ease;
   display: flex;
   justify-content: center;
+  width: 100%;
+  max-width: 800px;
 }
 
 .notification-content {
@@ -1958,16 +2286,22 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  max-width: 500px;
   text-align: center;
+  width: 100%;
 }
 
 .notification-content h3 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   margin: 0;
 }
 
-.notification-content button {
+.notification-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.notification-content .primary-button {
   background-color: white;
   color: var(--primary-color);
   border: none;
@@ -1981,200 +2315,77 @@ body {
   transition: all 0.3s ease;
 }
 
-.notification-content button:hover {
+.notification-content .primary-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Global error message */
-.error-message.global-error {
-  position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  min-width: 250px;
-  max-width: 90%;
-  border-radius: var(--border-radius);
-  animation: fadeIn 0.3s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* App loading container */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 60vh;
-  gap: 1rem;
-}
-
-.loading-container .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border-width: 4px;
-}
-
-/* Table page specific styles */
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.leave-table-button {
-  background-color: var(--danger-color);
+.notification-content .leave-table-button {
+  background-color: rgba(255, 255, 255, 0.15);
   color: white;
-  border: none;
-  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.75rem 1.5rem;
   border-radius: var(--border-radius);
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: none;
 }
 
-.leave-table-button:hover:not(:disabled) {
-  opacity: 0.9;
+.notification-content .leave-table-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
 }
 
-.player-info {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
+/* Enhanced form buttons */
+.form-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.chips-display {
+/* Enhanced error message */
+.error-message {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  align-items: center;
 }
 
-.chips-label {
-  font-weight: 500;
-}
-
-.chips-value {
-  font-weight: 700;
-  color: var(--success-color);
-}
-
-/* Authentication tabs and forms */
-.auth-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1.5rem;
-}
-
-.auth-tab {
-  flex: 1;
-  padding: 1rem;
-  text-align: center;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1rem;
+/* Enhanced button styling */
+button {
+  border-radius: var(--border-radius);
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.auth-tab.active {
-  color: var(--primary-color);
-  border-bottom: 2px solid var(--primary-color);
-}
-
-.auth-tab:hover:not(.active) {
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-}
-
-.login-form,
-.register-form {
-  animation: fadeIn 0.3s ease;
-}
-
-/* Slider input for player count */
-.slider-container {
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
 }
 
-.slider-container input[type="range"] {
-  flex: 1;
-  -webkit-appearance: none;
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--bg-tertiary);
-  outline: none;
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.slider-container input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.slider-container input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  cursor: pointer;
-  transition: background 0.2s;
-  border: none;
-}
-
-.slider-container input[type="range"]:hover::-webkit-slider-thumb,
-.slider-container input[type="range"]:focus::-webkit-slider-thumb {
-  background: var(--secondary-color);
-}
-
-.slider-container input[type="range"]:hover::-moz-range-thumb,
-.slider-container input[type="range"]:focus::-moz-range-thumb {
-  background: var(--secondary-color);
-}
-
-.slider-value {
-  font-weight: 600;
-  min-width: 24px;
-  text-align: center;
-  color: var(--primary-color);
-}
-
-/* Button spinner */
-.button-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
-  display: inline-block;
-}
-
-/* Better input styling */
+/* Enhanced input styling */
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="number"],
 textarea {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.85rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   background-color: var(--bg-secondary);
