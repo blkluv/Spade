@@ -32,7 +32,7 @@ function App() {
   // Socket state
   const [socketConnected, setSocketConnected] = useState(false);
 
-  // Modify the useEffect in App.js to properly handle avatar on refresh
+  // Check theme preference and load user data on mount
   useEffect(() => {
     // Apply theme class to body
     document.body.className = darkMode ? "dark-theme" : "light-theme";
@@ -43,75 +43,17 @@ function App() {
       // First check if we have cached user data in localStorage
       const cachedUserData = localStorage.getItem("pokerUser");
       if (cachedUserData) {
-        try {
-          // Set initial user state from localStorage while we wait for API
-          const parsedUser = JSON.parse(cachedUserData);
-          setUser(parsedUser);
-
-          // If the cached user has a custom avatar flag but no avatar data,
-          // we need to load the full user data from the API
-          loadUserData();
-        } catch (error) {
-          console.error("Error parsing cached user data:", error);
-          loadUserData();
-        }
-      } else {
-        loadUserData();
+        // Set initial user state from localStorage
+        const parsedUser = JSON.parse(cachedUserData);
+        setUser(parsedUser);
       }
+
+      // Always load fresh data from API
+      loadUserData();
     } else {
       setIsLoadingUser(false);
     }
   }, [darkMode]);
-
-// Modify the loadUserData function in App.js
-  const loadUserData = async () => {
-    setIsLoadingUser(true);
-    try {
-      const userData = await ApiService.getCurrentUser();
-
-      // Process avatar data based on backend response format
-      let processedAvatarData = null;
-
-      // If backend now uses avatarBase64 instead of avatar
-      if (userData.avatarBase64) {
-        processedAvatarData = `data:image/jpeg;base64,${userData.avatarBase64}`;
-      }
-      // Fallback for legacy format
-      else if (userData.avatar) {
-        processedAvatarData = ApiService.processAvatarData(userData.avatar);
-      }
-
-      // Store the complete user data including processed avatar
-      const userWithAvatar = {
-        ...userData,
-        avatar: processedAvatarData ? null : "default", // Use default avatar if no custom avatar
-        customAvatar: processedAvatarData, // Store processed avatar data URL
-      };
-
-      setUser(userWithAvatar);
-
-      // Store in localStorage for persistence
-      // For better performance with localStorage, we'll store minimal user data
-      const userForStorage = {
-        id: userData.id,
-        username: userData.username,
-        email: userData.email,
-        balance: userData.balance,
-        isAdmin: userData.isAdmin,
-        avatar: processedAvatarData ? null : "default",
-        customAvatar: processedAvatarData, // Store the actual image data this time
-      };
-
-      localStorage.setItem("pokerUser", JSON.stringify(userForStorage));
-    } catch (error) {
-      console.error("Failed to load user data:", error);
-      // Clear token if authentication failed
-      ApiService.clearToken();
-      localStorage.removeItem("pokerUser");
-    } finally {
-      setIsLoadingUser(false);
-    }
-  };
 
   // Setup socket connection listeners
   useEffect(() => {
@@ -138,29 +80,57 @@ function App() {
     };
   }, []);
 
+  // Load user data from API
+  const loadUserData = async () => {
+    setIsLoadingUser(true);
+    try {
+      const userData = await ApiService.getCurrentUser();
+
+      // Process avatar data from backend
+      let processedAvatarData = null;
+
+      // Check for the base64 encoded avatar
+      if (userData.avatarBase64) {
+        processedAvatarData = `data:image/jpeg;base64,${userData.avatarBase64}`;
+      }
+
+      // Create user object with processed avatar
+      const userWithAvatar = {
+        ...userData,
+        avatar: processedAvatarData ? null : "default",
+        customAvatar: processedAvatarData,
+      };
+
+      setUser(userWithAvatar);
+
+      // Store complete user data in localStorage for persistence
+      localStorage.setItem("pokerUser", JSON.stringify(userWithAvatar));
+    } catch (error) {
+      console.error("Failed to load user data:", error);
+      // Clear token if authentication failed
+      ApiService.clearToken();
+      localStorage.removeItem("pokerUser");
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
   // Handle login from ProfilePage
   const handleLogin = (userData) => {
     // Process avatar data if it exists
     let processedAvatarData = null;
-    if (userData.avatar) {
-      processedAvatarData = ApiService.processAvatarData(userData.avatar);
+    if (userData.avatarBase64) {
+      processedAvatarData = `data:image/jpeg;base64,${userData.avatarBase64}`;
     }
 
     const userWithProcessedAvatar = {
       ...userData,
-      avatar: processedAvatarData ? null : "default", // Use default if no custom avatar
-      customAvatar: processedAvatarData, // Store processed avatar URL
+      avatar: processedAvatarData ? null : "default",
+      customAvatar: processedAvatarData,
     };
 
     setUser(userWithProcessedAvatar);
-
-    // Store limited user data in localStorage to avoid size issues
-    const userForStorage = { ...userWithProcessedAvatar };
-    if (processedAvatarData) {
-      userForStorage.hasCustomAvatar = true;
-      userForStorage.customAvatar = null; // Don't store image data in localStorage
-    }
-    localStorage.setItem("pokerUser", JSON.stringify(userForStorage));
+    localStorage.setItem("pokerUser", JSON.stringify(userWithProcessedAvatar));
   };
 
   // Handle logout

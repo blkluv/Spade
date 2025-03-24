@@ -77,42 +77,29 @@ class ApiService {
   }
 
   /**
-   * Process avatar data from different possible formats to a usable URL
-   * @param {*} avatarData - Avatar data from the server (byte array, base64, etc)
+   * Process avatar data from the backend response
+   * @param {*} data - Avatar data (base64 string or object with avatarBase64 property)
    * @returns {string|null} URL for the avatar image or null if no valid data
    */
   static processAvatarData(data) {
     // Handle null case
     if (!data) return null;
 
-    // Case 1: If it's already a data URL, return as is
+    // If it's already a complete data URL, return as is
     if (typeof data === 'string') {
       if (data.startsWith('data:')) {
         return data;
       }
 
-      // Case 2: If it's a base64 string without the data: prefix
-      try {
-        // Test if it's valid base64
-        atob(data);
-        return `data:image/jpeg;base64,${data}`;
-      } catch (e) {
-        // Not valid base64, continue with other checks
-      }
+      // If it's a base64 string without the data: prefix
+      return `data:image/jpeg;base64,${data}`;
     }
 
-    // Case 3: Check if the data has avatarBase64 property (new backend format)
+    // If the data has avatarBase64 property (primary format)
     if (data.avatarBase64) {
       return `data:image/jpeg;base64,${data.avatarBase64}`;
     }
 
-    // Case 4: Legacy array format (byte array)
-    if (Array.isArray(data)) {
-      const binary = data.map(byte => String.fromCharCode(byte)).join('');
-      return `data:image/jpeg;base64,${btoa(binary)}`;
-    }
-
-    console.warn('Unprocessable avatar data:', data);
     return null;
   }
 

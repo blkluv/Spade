@@ -60,8 +60,8 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
 
       // Process avatar data if it exists
       let processedAvatarData = null;
-      if (userData.avatar) {
-        processedAvatarData = ApiService.processAvatarData(userData.avatar);
+      if (userData.avatarBase64) {
+        processedAvatarData = `data:image/jpeg;base64,${userData.avatarBase64}`;
       }
 
       // Create proper user object with processed avatar
@@ -208,7 +208,7 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
     }
   };
 
-  // Update the handleImageUpload function in ProfilePage.js
+  // Handle image upload
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -239,26 +239,19 @@ function ProfilePage({ user, onLogin, onLogout, navigateToHome }) {
 
         const updatedUser = await ApiService.uploadAvatar(formData);
 
-        // Process avatar data based on backend response format
+        // Process avatar data from response
         let processedAvatarData = null;
 
-        // Check for the new avatarBase64 property
+        // Check for the base64 encoded avatar
         if (updatedUser.avatarBase64) {
           processedAvatarData = `data:image/jpeg;base64,${updatedUser.avatarBase64}`;
         }
-        // Fallback for legacy format
-        else if (updatedUser.avatar) {
-          processedAvatarData = ApiService.processAvatarData(updatedUser.avatar);
-        }
 
-        // Update user state with processed avatar
-        const userWithAvatar = {
+        onLogin({
           ...updatedUser,
           avatar: null, // Using custom avatar
           customAvatar: processedAvatarData || localPreviewUrl, // Use processed data or local preview
-        };
-
-        onLogin(userWithAvatar);
+        });
 
         setSuccessMessage("Profile picture updated!");
         setTimeout(() => setSuccessMessage(""), 2000);
