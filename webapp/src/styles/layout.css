@@ -10,11 +10,40 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
+  width: 100%;
+}
+
+
+
+
+/* For poker table layout specifically */
+.poker-table-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "header"
+    "scanner"
+    "actions";
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  grid-column: 1 / -1; /* Make it span all columns */
 }
 
 @media (min-width: 768px) {
   .main-content {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* Adjust poker table layout for larger screens */
+  .poker-table-layout {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "header header"
+      "scanner actions";
+    grid-column: 1 / -1; /* Make it span all columns in the parent grid */
   }
 }
 

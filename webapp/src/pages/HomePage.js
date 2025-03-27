@@ -192,77 +192,72 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
 
   // Conditionally render either the lobby system or the poker table
   return (
-    <div className={`main-content ${!atTable ? "lobby-layout" : ""}`}>
-      {error && <div className="error-message global-error">{error}</div>}
+      <div className={`main-content ${!atTable ? "lobby-layout" : ""}`}>
+        {error && <div className="error-message global-error">{error}</div>}
 
-      {!atTable ? (
-        // Lobby System when not at a table
-        <LobbySystem
-          user={user}
-          onJoinTable={handleJoinTable}
-          currentTable={currentTable}
-          darkMode={darkMode}
-        />
-      ) : (
-        // Poker Table UI when at a table
-        <>
-          <div className="table-header">
-            <h2>Table: {currentTable?.name}</h2>
-            <div className="table-info">
-              {currentTable?.ownerId === user?.id && (
-                <>
+        {!atTable ? (
+            // Lobby System when not at a table
+            <LobbySystem
+                user={user}
+                onJoinTable={handleJoinTable}
+                currentTable={currentTable}
+                darkMode={darkMode}
+            />
+        ) : (
+            // Poker Table UI when at a table - using grid layout
+            <div className="poker-table-layout">
+              {/* Header area with table name and controls */}
+              <div className="table-header" style={{ gridArea: "header", width: "100%" }}>
+                <h2>Table: {currentTable?.name}</h2>
+                <div className="table-info">
+                  {currentTable?.ownerId === user?.id && (
+                      <>
                   <span className="owner-badge" title="You are the owner of this table">
                     <FaShieldAlt className="owner-icon" />
                   </span>
+                        <button
+                            className="delete-table-button"
+                            onClick={() => setShowDeleteConfirmation(true)}
+                            disabled={isLoading}
+                            title="Delete Table"
+                        >
+                          <FaTrash />
+                        </button>
+                      </>
+                  )}
                   <button
-                    className="delete-table-button"
-                    onClick={() => setShowDeleteConfirmation(true)}
-                    disabled={isLoading}
-                    title="Delete Table"
+                      className="leave-table-button"
+                      onClick={handleLeaveTable}
+                      disabled={isLoading}
+                      title="Leave Table"
                   >
-                    <FaTrash />
+                    <FaSignOutAlt />
                   </button>
-                </>
-              )}
-              <button
-                className="leave-table-button"
-                onClick={handleLeaveTable}
-                disabled={isLoading}
-                title="Leave Table"
-              >
-                <FaSignOutAlt />
-              </button>
+                </div>
+              </div>
+
+              {/* Scanner area */}
+              <div style={{ gridArea: "scanner", width: "100%" }}>
+                <CardScanner
+                    socketConnected={socketConnected}
+                    socket={socket}
+                    actionStatus={actionStatus}
+                    isLoading={isLoading}
+                />
+              </div>
+
+              {/* Action panel area */}
+              <div style={{ gridArea: "actions", width: "100%" }}>
+                <ActionPanel
+                    chips={currChips}
+                    isLoading={isLoading}
+                    actionStatus={actionStatus}
+                    onAction={handleAction}
+                />
+              </div>
             </div>
-          </div>
-
-          <PokerTable currentTable={currentTable}>
-            <CardScanner
-              socketConnected={socketConnected}
-              socket={socket}
-            />
-
-            <ActionPanel
-              chips={currChips}
-              isLoading={isLoading}
-              actionStatus={actionStatus}
-              onAction={handleAction}
-            />
-          </PokerTable>
-
-          {/* Confirmation Modal for Table Deletion */}
-          <ConfirmationModal
-            show={showDeleteConfirmation}
-            title="Delete Table"
-            message="Are you sure you want to delete this table? This action cannot be undone, and all players will be removed from the table."
-            confirmText="Delete Table"
-            cancelText="Cancel"
-            confirmButtonClass="danger"
-            onConfirm={handleDeleteTable}
-            onCancel={() => setShowDeleteConfirmation(false)}
-          />
-        </>
-      )}
-    </div>
+        )}
+      </div>
   );
 }
 
