@@ -3,6 +3,7 @@ import CamDiv from "../common/CamDiv";
 
 /**
  * Card scanner component for detecting and displaying player cards
+ * Updated to use a privacy placeholder during scanning
  *
  * @param {Object} props Component props
  * @param {boolean} props.socketConnected Socket connection status
@@ -49,10 +50,10 @@ const CardScanner = ({ socketConnected, socket, onCapture }) => {
       // Convert canvas to blob
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob(
-          (blob) =>
-            blob ? resolve(blob) : reject(new Error("Canvas is empty")),
-          "image/jpeg",
-          0.8
+            (blob) =>
+                blob ? resolve(blob) : reject(new Error("Canvas is empty")),
+            "image/jpeg",
+            0.8
         );
       });
 
@@ -62,12 +63,12 @@ const CardScanner = ({ socketConnected, socket, onCapture }) => {
       // Send frame to server for card detection
       const response = await new Promise((resolve) => {
         socket.emit(
-          "frame",
-          {
-            n: 2,
-            image: arrayBuffer,
-          },
-          resolve
+            "frame",
+            {
+              n: 2,
+              image: arrayBuffer,
+            },
+            resolve
         );
       });
 
@@ -164,109 +165,124 @@ const CardScanner = ({ socketConnected, socket, onCapture }) => {
     };
 
     return (
-      <div
-        className={`poker-cards clickable`}
-        onClick={revealCards}
-        data-action-hint={hintText}
-      >
-        {cards.map((card, index) => {
-          const { rank, suit } = parseCard(card);
+        <div
+            className={`poker-cards clickable`}
+            onClick={revealCards}
+            data-action-hint={hintText}
+        >
+          {cards.map((card, index) => {
+            const { rank, suit } = parseCard(card);
 
-          return (
-            <div
-              key={index}
-              className={`poker-card ${!cardsRevealed ? "covered" : ""} ${
-                suit === "♥" || suit === "♦" ? "red-card" : "black-card"
-              }`}
-            >
-              {!cardsRevealed ? (
-                <div className="card-back">
-                  <span className="reveal-hint">Click to reveal</span>
+            return (
+                <div
+                    key={index}
+                    className={`poker-card ${!cardsRevealed ? "covered" : ""} ${
+                        suit === "♥" || suit === "♦" ? "red-card" : "black-card"
+                    }`}
+                >
+                  {!cardsRevealed ? (
+                      <div className="card-back">
+                        <span className="reveal-hint">Click to reveal</span>
+                      </div>
+                  ) : (
+                      <div className="card-content">
+                        <div className="card-rank">{rank}</div>
+                        <div className="card-suit">{suit}</div>
+                        <span className="hide-hint">Click to hide</span>
+                      </div>
+                  )}
                 </div>
-              ) : (
-                <div className="card-content">
-                  <div className="card-rank">{rank}</div>
-                  <div className="card-suit">{suit}</div>
-                  <span className="hide-hint">Click to hide</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
     );
   };
 
   return (
-    <div className="card-scanner">
-      {cardsScanned ? (
-        <div className="scanned-result">
-          <h2>Your Cards</h2>
-          {renderCards()}
+      <div className="card-scanner">
+        {cardsScanned ? (
+            <div className="scanned-result">
+              <h2>Your Cards</h2>
+              {renderCards()}
 
-          {/* Verification controls - only show after revealing */}
-          {cardsRevealed && !cardsConfirmed ? (
-            <div className="card-verification">
-              <p className="verification-text">Are these cards correct?</p>
-              <div className="verification-buttons">
-                <button
-                  className="confirm-button"
-                  onClick={handleConfirmCards}
-                >
-                  Yes, Correct
-                </button>
-                <button className="retry-button" onClick={handleRetryScan}>
-                  No, Retry Scan
-                </button>
-              </div>
-              <p className="toggle-hint">
-                You can click the cards to hide them again
-              </p>
+              {/* Verification controls - only show after revealing */}
+              {cardsRevealed && !cardsConfirmed ? (
+                  <div className="card-verification">
+                    <p className="verification-text">Are these cards correct?</p>
+                    <div className="verification-buttons">
+                      <button
+                          className="confirm-button"
+                          onClick={handleConfirmCards}
+                      >
+                        Yes, Correct
+                      </button>
+                      <button className="retry-button" onClick={handleRetryScan}>
+                        No, Retry Scan
+                      </button>
+                    </div>
+                    <p className="toggle-hint">
+                      You can click the cards to hide them again
+                    </p>
+                  </div>
+              ) : cardsConfirmed ? (
+                  <>
+                    <p className="toggle-hint">Click cards to show or hide them</p>
+                    <button className="reset-button" onClick={resetScan}>
+                      Scan New Cards
+                    </button>
+                  </>
+              ) : null}
             </div>
-          ) : cardsConfirmed ? (
-            <>
-              <p className="toggle-hint">Click cards to show or hide them</p>
-              <button className="reset-button" onClick={resetScan}>
-                Scan New Cards
-              </button>
-            </>
-          ) : null}
-        </div>
-      ) : (
-        <div className="scanner-container">
-          {socketConnected ? (
-            <div className="scanner-overlay">
-              <div className={`scan-area ${cameraEnabled ? "active" : ""}`}>
-                <CamDiv
-                  cameraEnabled={cameraEnabled}
-                  webcamRef={webcamRef}
-                  onCapture={handleCapture}
-                />
-                {cameraEnabled && <div className="scanning-animation"></div>}
-              </div>
-              <button
-                className={`scan-button ${cameraEnabled ? "active" : ""}`}
-                onClick={() => setCameraEnabled(!cameraEnabled)}
-                disabled={isLoading}
-              >
-                {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
-              </button>
+        ) : (
+            <div className="scanner-container">
+              {socketConnected ? (
+                  <div className="scanner-overlay">
+                    <div className={`scan-area ${cameraEnabled ? "active" : ""}`}>
+                      {/* We've modified this section to hide the actual webcam feed and show a placeholder instead */}
+                      {cameraEnabled ? (
+                          <div className="privacy-placeholder">
+                            <p>Scanning cards</p>
+                            <div className="scanning-animation"></div>
+                            {/* Hidden webcam for processing - not visible to user */}
+                            <div className="hidden-webcam">
+                              <CamDiv
+                                  cameraEnabled={cameraEnabled}
+                                  webcamRef={webcamRef}
+                                  onCapture={handleCapture}
+                              />
+                            </div>
+                          </div>
+                      ) : (
+                          <CamDiv
+                              cameraEnabled={false}
+                              webcamRef={webcamRef}
+                              onCapture={handleCapture}
+                          />
+                      )}
+                    </div>
+                    <button
+                        className={`scan-button ${cameraEnabled ? "active" : ""}`}
+                        onClick={() => setCameraEnabled(!cameraEnabled)}
+                        disabled={isLoading}
+                    >
+                      {cameraEnabled ? "Stop Scanning" : "Scan Cards"}
+                    </button>
+                  </div>
+              ) : (
+                  <div className="connection-error">
+                    Server connection failed. <br /> Please restart server or debug.
+                  </div>
+              )}
             </div>
-          ) : (
-            <div className="connection-error">
-              Server connection failed. <br /> Please restart server or debug.
-            </div>
-          )}
-        </div>
-      )}
+        )}
 
-      {actionStatus && (
-        <div className="action-status">
-          {isLoading && <div className="loading-spinner"></div>}
-          <p>{actionStatus}</p>
-        </div>
-      )}
-    </div>
+        {actionStatus && (
+            <div className="action-status">
+              {isLoading && <div className="loading-spinner"></div>}
+              <p>{actionStatus}</p>
+            </div>
+        )}
+      </div>
   );
 };
 
