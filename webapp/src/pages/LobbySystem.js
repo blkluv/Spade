@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaUsers, FaCoins, FaLock, FaLockOpen, FaSearch,
-         FaSync, FaDoorOpen, FaExclamationCircle, FaStar, FaTrophy,
+import { FaPlus, FaUsers, FaSearch,
+         FaSync, FaDoorOpen, FaExclamationCircle, FaTrophy,
          FaSignOutAlt } from "react-icons/fa";
-import ApiService from "./ApiService";
+import ApiService from "../services/ApiService";
+import TableCard from "../components/lobby/TableCard";
 
+/**
+ * Lobby system component for browsing and joining tables
+ *
+ * @param {Object} props Component props
+ * @param {Object} props.user Current user data
+ * @param {function} props.onJoinTable Function to handle joining a table
+ * @param {Object} props.currentTable Current table data if user is at a table
+ * @param {boolean} props.darkMode Dark mode state
+ * @returns {JSX.Element} LobbySystem component
+ */
 function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
   // Tables state
   const [tables, setTables] = useState([]);
@@ -54,7 +65,6 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
     setError("");
 
     try {
-      // Simulate API call for demonstration
       const tablesData = showOnlyPublic
         ? await ApiService.getPublicTables()
         : await ApiService.getAllTables();
@@ -261,76 +271,17 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
             )}
           </div>
         ) : (
-          filteredTables.map((table, index) => {
-            // Assign a random theme class for visual variety
-            const themes = ['theme-spades', 'theme-hearts', 'theme-diamonds', 'theme-clubs'];
-            const randomTheme = themes[index % themes.length];
-
-            // Create more interesting descriptions for demo purposes
-            const isVIP = table.minBuyIn > 500;
-            const descriptions = [
-              "A friendly table for casual players looking to enjoy the game without pressure.",
-              "High-stakes action with experienced players. Not for the faint of heart!",
-              "Fast-paced games with 3-minute timers. Perfect for quick rounds.",
-              "Tournament practice table with professional-style play.",
-              "Beginners welcome! Learn the ropes in a supportive environment.",
-              "Weekly regulars table - all skill levels welcome."
-            ];
-
-            // Use table description or a random one if empty
-            const tableDescription = table.description || descriptions[index % descriptions.length];
-
-            return (
-              <div key={table.id} className={`table-card ${randomTheme}`}>
-                <div className="table-header">
-                  <h3>
-                    {table.name}
-                    {isVIP && <FaStar className="vip-icon" title="VIP Table" />}
-                  </h3>
-                  {table.isPrivate ? (
-                    <FaLock className="table-status-icon private" title="Private table" />
-                  ) : (
-                    <FaLockOpen className="table-status-icon public" title="Public table" />
-                  )}
-                </div>
-
-                <p className={`table-description ${isVIP ? 'vip' : ''}`}>
-                  {tableDescription}
-                </p>
-
-                <div className="table-details">
-                  <div className="table-detail">
-                    <FaUsers className="detail-icon" />
-                    <span>
-                      {table.currentPlayers}/{table.maxPlayers} players
-                    </span>
-                  </div>
-
-                  <div className="table-detail">
-                    <FaCoins className="detail-icon" />
-                    <span>
-                      Buy-in: {table.minBuyIn} - {table.maxBuyIn}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="table-actions">
-                  <button
-                    className="join-button"
-                    onClick={() => {
-                      setJoinTableId(table.id);
-                      setBuyInAmount(table.minBuyIn.toString());
-                    }}
-                    disabled={table.currentPlayers >= table.maxPlayers}
-                  >
-                    {table.currentPlayers >= table.maxPlayers
-                      ? "Table Full"
-                      : "Take a Seat"}
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          filteredTables.map((table, index) => (
+            <TableCard
+              key={table.id}
+              table={table}
+              onJoin={(tableId, buyIn) => {
+                setJoinTableId(tableId);
+                setBuyInAmount(buyIn.toString());
+              }}
+              index={index}
+            />
+          ))
         )}
       </div>
 
@@ -518,7 +469,7 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
 
               {parseInt(buyInAmount, 10) > (user?.balance || 0) && (
                 <div className="error-message">
-                  <FaCoins /> Insufficient balance for this buy-in amount
+                  <FaUsers /> Insufficient balance for this buy-in amount
                 </div>
               )}
             </form>

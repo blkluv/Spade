@@ -1,6 +1,15 @@
 import React, { useEffect } from "react";
 import Webcam from "react-webcam";
 
+/**
+ * Camera component for scanning cards
+ *
+ * @param {Object} props Component props
+ * @param {boolean} props.cameraEnabled Whether the camera is active
+ * @param {React.RefObject} props.webcamRef Reference to webcam element
+ * @param {function} props.onCapture Function to handle captured frames
+ * @returns {JSX.Element} CamDiv component
+ */
 function CamDiv({ cameraEnabled, webcamRef, onCapture }) {
   useEffect(() => {
     if (cameraEnabled && webcamRef.current) {

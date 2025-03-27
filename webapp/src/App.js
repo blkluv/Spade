@@ -1,18 +1,13 @@
-// Modified App.js to control Calibration tab visibility
-
-import React, { useState, useRef, useEffect } from "react";
-import { FaMoon, FaSun, FaHome, FaUser, FaCog } from "react-icons/fa";
-import { GiPokerHand } from "react-icons/gi";
-import { BsCircleFill } from "react-icons/bs";
-import CamDiv from "./CamDiv";
-import HomePage from "./HomePage";
-import ProfilePage from "./ProfilePage";
-import CalibrationPage from "./CalibrationPage";
-import ApiService from "./ApiService";
+                  import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import "./styles.css";
+import ApiService from "./services/ApiService";
+import Header from "./components/common/Header";
+import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
+import CalibrationPage from "./pages/CalibrationPage";
+                  import {GiPokerHand} from "react-icons/gi";
 
-// Socket connection
+// Socket connection setup
 const socket = io("http://localhost:5001", {
   rejectUnauthorized: false,
   reconnection: true,
@@ -20,6 +15,12 @@ const socket = io("http://localhost:5001", {
   reconnectionDelay: 10000,
 });
 
+/**
+ * Main App component
+ * Handles global state, navigation, and authentication
+ *
+ * @returns {JSX.Element} App component
+ */
 function App() {
   // Theme state
   const [darkMode, setDarkMode] = useState(true);
@@ -34,7 +35,7 @@ function App() {
   // Socket state
   const [socketConnected, setSocketConnected] = useState(false);
 
-  // Table state - new states for table ownership
+  // Table state
   const [atTable, setAtTable] = useState(false);
   const [currentTable, setCurrentTable] = useState(null);
   const [isTableOwner, setIsTableOwner] = useState(false);
@@ -110,7 +111,9 @@ function App() {
     };
   }, []);
 
-  // Load user data from API
+  /**
+   * Load user data from API
+   */
   const loadUserData = async () => {
     setIsLoadingUser(true);
     try {
@@ -145,7 +148,9 @@ function App() {
     }
   };
 
-  // Check if the user is at a table
+  /**
+   * Check if the user is at a table
+   */
   const checkTableStatus = async () => {
     if (!user) {
       setAtTable(false);
@@ -185,7 +190,10 @@ function App() {
     }
   };
 
-  // Handle login from ProfilePage
+  /**
+   * Handle login from ProfilePage
+   * @param {Object} userData User data from login/register
+   */
   const handleLogin = (userData) => {
     // Process avatar data if it exists
     let processedAvatarData = null;
@@ -206,7 +214,9 @@ function App() {
     setTimeout(checkTableStatus, 500);
   };
 
-  // Handle logout
+  /**
+   * Handle logout
+   */
   const handleLogout = () => {
     ApiService.clearToken();
     setUser(null);
@@ -217,141 +227,81 @@ function App() {
     setIsTableOwner(false);
   };
 
-  // Handle navigation
+  /**
+   * Handle navigation
+   * @param {string} page Page to navigate to
+   */
   const navigateTo = (page) => {
     setCurrentPage(page);
   };
 
-  // Determine if we should show the title based on window width
-  const isCompactMode = windowWidth < 600;
-
   return (
-      <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
-        <header className="app-header">
-          <div className={`logo ${isCompactMode ? 'compact' : ''}`} onClick={() => navigateTo("home")}>
-            <div className="logo-icon-container">
-              <GiPokerHand className="logo-icon" />
-            </div>
-            <h1 className="logo-title">SPADE</h1>
+    <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
+      <Header
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+        currentPage={currentPage}
+        navigateTo={navigateTo}
+        user={user}
+        socketConnected={socketConnected}
+        atTable={atTable}
+        isTableOwner={isTableOwner}
+        windowWidth={windowWidth}
+      />
+
+      <main>
+        {isLoadingUser ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading...</p>
           </div>
-
-          <div className="header-controls">
-            <div className="connection-indicator">
-              <BsCircleFill
-                  className={`status-circle ${socketConnected ? "connected" : "disconnected"}`}
-              />
+        ) : !user && currentPage !== "profile" ? (
+          // If not logged in and not on profile page, show auth required message
+          <div className="auth-required">
+            <div className="auth-required-card">
+              <GiPokerHand className="auth-icon" />
+              <h2>Welcome to SPADE Poker</h2>
+              <p>Please log in or create an account to continue</p>
+              <button
+                className="primary-button"
+                onClick={() => navigateTo("profile")}
+              >
+                Login / Register
+              </button>
             </div>
-            {user && (
-                <div className="nav-buttons">
-                  <button
-                      className={`nav-button ${currentPage === "home" ? "active" : ""}`}
-                      onClick={() => navigateTo("home")}
-                      aria-label="Home"
-                  >
-                    <FaHome className="nav-icon"/>
-                  </button>
-
-                  {/* Only show Calibration tab if user is at a table AND is the table owner */}
-                  {atTable && isTableOwner && (
-                      <button
-                          className={`nav-button ${currentPage === "calibration" ? "active" : ""}`}
-                          onClick={() => navigateTo("calibration")}
-                          aria-label="Calibration"
-                      >
-                        <FaCog className="nav-icon"/>
-                      </button>
-                  )}
-                </div>
+          </div>
+        ) : (
+          <>
+            {currentPage === "home" && (
+              <HomePage
+                socket={socket}
+                socketConnected={socketConnected}
+                darkMode={darkMode}
+                user={user}
+                onTableStatusChange={checkTableStatus}
+              />
             )}
 
-            <button
-                className={`nav-button ${
-                    currentPage === "profile" ? "active" : ""
-                }`}
-                onClick={() => navigateTo("profile")}
-                aria-label="Profile"
-            >
-              {user ? (
-                  <div
-                      className={`mini-avatar ${
-                          user.customAvatar ? "custom" : `avatar-${user.avatar}`
-                      }`}
-                      style={
-                        user.customAvatar
-                            ? {backgroundImage: `url(${user.customAvatar})`}
-                            : {}
-                      }
-                  >
-                    {!user.customAvatar && user.username.charAt(0).toUpperCase()}
-                  </div>
-              ) : (
-                  <FaUser className="nav-icon"/>
-              )}
-            </button>
+            {currentPage === "calibration" && atTable && isTableOwner && (
+              <CalibrationPage
+                socket={socket}
+                socketConnected={socketConnected}
+                tableId={currentTable?.id}
+              />
+            )}
 
-            <button
-                className="theme-toggle"
-                onClick={() => setDarkMode(!darkMode)}
-                aria-label="Toggle theme"
-            >
-              {darkMode ? <FaSun/> : <FaMoon/>}
-            </button>
-          </div>
-        </header>
-
-        <main>
-          {isLoadingUser ? (
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Loading...</p>
-              </div>
-          ) : !user && currentPage !== "profile" ? (
-              // If not logged in and not on profile page, show auth required message
-              <div className="auth-required">
-                <div className="auth-required-card">
-                  <GiPokerHand className="auth-icon" />
-                  <h2>Welcome to SPADE Poker</h2>
-                  <p>Please log in or create an account to continue</p>
-                  <button
-                      className="primary-button"
-                      onClick={() => navigateTo("profile")}
-                  >
-                    Login / Register
-                  </button>
-                </div>
-              </div>
-          ) : (
-              <>
-                {currentPage === "home" && (
-                    <HomePage
-                        socket={socket}
-                        socketConnected={socketConnected}
-                        darkMode={darkMode}
-                        user={user}
-                        onTableStatusChange={checkTableStatus}
-                    />
-                )}
-
-                {currentPage === "calibration" && atTable && isTableOwner && (
-                    <CalibrationPage
-                        socket={socket}
-                        socketConnected={socketConnected}
-                        tableId={currentTable?.id}
-                    />
-                )}
-
-                {currentPage === "profile" && (
-                    <ProfilePage
-                        user={user}
-                        onLogin={handleLogin}
-                        onLogout={handleLogout}
-                        navigateToHome={() => navigateTo("home")}
-                    />
-                )}
-              </>
-          )}
-        </main>
-      </div>
+            {currentPage === "profile" && (
+              <ProfilePage
+                user={user}
+                onLogin={handleLogin}
+                onLogout={handleLogout}
+                navigateToHome={() => navigateTo("home")}
+              />
+            )}
+          </>
+        )}
+      </main>
+    </div>
   );
 }
 
