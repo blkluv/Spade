@@ -16,9 +16,10 @@ import PokerTable from "../components/game/PokerTable";
  * @param {boolean} props.darkMode Dark mode state
  * @param {Object} props.user Current user data
  * @param {Function} props.onTableStatusChange Callback when table status changes
+ * @param {Function} props.onBalanceUpdate Callback to update user balance in parent component
  * @returns {JSX.Element} HomePage component
  */
-function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange }) {
+function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange, onBalanceUpdate }) {
   // State for camera and scanning
   const [isLoading, setIsLoading] = useState(false);
   const [actionStatus, setActionStatus] = useState("");
@@ -26,7 +27,7 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
   // State for current table
   const [currentTable, setCurrentTable] = useState(null);
   const [atTable, setAtTable] = useState(false);
-  const [checkingTableStatus, setCheckingTableStatus] = useState(true);
+  const [checkingTableStatus, setCheckingTableStatus] = useState(false);
   const [currChips, setCurrChips] = useState(0);
 
   // Error state
@@ -37,17 +38,35 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
 
   // Check if the user is at a table when the component mounts or user changes
   useEffect(() => {
-    checkTableStatus();
-    updateChips();
+    if (user) {
+      checkTableStatus();
+      updateChips();
+    }
   }, [user]);
 
   // Update chips
   const updateChips = async () => {
+    if (!user) return;
+
     try {
       const chips = await ApiService.getCurrChips();
       setCurrChips(chips);
     } catch (error) {
       console.error("Error getting chips:", error);
+    }
+  };
+
+  // Get the updated user balance from the server
+  const fetchAndUpdateUserBalance = async () => {
+    if (!user) return;
+
+    try {
+      const userData = await ApiService.getCurrentUser();
+      if (userData && onBalanceUpdate) {
+        onBalanceUpdate(userData.balance);
+      }
+    } catch (error) {
+      console.error("Error fetching updated user balance:", error);
     }
   };
 
@@ -102,6 +121,9 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
       // If buy-in is provided, it's a new join
       if (buyIn) {
         await ApiService.joinTable(tableId, buyIn);
+
+        // Get the updated balance after joining
+        await fetchAndUpdateUserBalance();
       }
 
       // Check table status again to update the UI
@@ -125,6 +147,9 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
     try {
       await ApiService.leaveTable(currentTable.id);
 
+      // Get the updated balance after leaving
+      await fetchAndUpdateUserBalance();
+
       // Check table status again to update the UI
       await checkTableStatus();
       await updateChips();
@@ -146,6 +171,9 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
 
     try {
       await ApiService.deleteTable(currentTable.id);
+
+      // Get the updated balance after table deletion
+      await fetchAndUpdateUserBalance();
 
       // Show success message
       setActionStatus("Table successfully deleted");
@@ -172,6 +200,9 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 500));
       setActionStatus(`Action "${action}" completed.`);
+
+      // In a real implementation, you'd update the user balance here
+      // await fetchAndUpdateUserBalance();
 
       // Clear status after 2 seconds
       setTimeout(() => setActionStatus(""), 2000);
@@ -202,6 +233,7 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
                 onJoinTable={handleJoinTable}
                 currentTable={currentTable}
                 darkMode={darkMode}
+                onBalanceUpdate={onBalanceUpdate}
             />
         ) : (
             // Poker Table UI when at a table - using grid layout
@@ -255,6 +287,18 @@ function HomePage({ socket, socketConnected, darkMode, user, onTableStatusChange
                     onAction={handleAction}
                 />
               </div>
+
+              {/* Confirmation Modal for deleting table */}
+              <ConfirmationModal
+                show={showDeleteConfirmation}
+                title="Delete Table"
+                message="Are you sure you want to delete this table? All players will be removed."
+                confirmText="Delete Table"
+                cancelText="Cancel"
+                confirmButtonClass="danger"
+                onConfirm={handleDeleteTable}
+                onCancel={() => setShowDeleteConfirmation(false)}
+              />
             </div>
         )}
       </div>

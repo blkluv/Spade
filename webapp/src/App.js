@@ -1,11 +1,11 @@
-                  import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import ApiService from "./services/ApiService";
 import Header from "./components/common/Header";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import CalibrationPage from "./pages/CalibrationPage";
-                  import {GiPokerHand} from "react-icons/gi";
+import { GiPokerHand } from "react-icons/gi";
 
 // Socket connection setup
 const socket = io("http://localhost:5001", {
@@ -39,7 +39,7 @@ function App() {
   const [atTable, setAtTable] = useState(false);
   const [currentTable, setCurrentTable] = useState(null);
   const [isTableOwner, setIsTableOwner] = useState(false);
-  const [checkingTableStatus, setCheckingTableStatus] = useState(true);
+  const [checkingTableStatus, setCheckingTableStatus] = useState(false);
 
   // Window width state for responsive header
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -85,6 +85,13 @@ function App() {
       checkTableStatus();
     }
   }, [user]);
+
+  // Refresh user data when changing pages
+  useEffect(() => {
+    if (user && currentPage === "profile") {
+      loadUserData();
+    }
+  }, [currentPage]);
 
   // Setup socket connection listeners
   useEffect(() => {
@@ -210,6 +217,9 @@ function App() {
     setUser(userWithProcessedAvatar);
     localStorage.setItem("pokerUser", JSON.stringify(userWithProcessedAvatar));
 
+    // Navigate to home page after login
+    setCurrentPage("home");
+
     // Check table status after login
     setTimeout(checkTableStatus, 500);
   };
@@ -235,6 +245,88 @@ function App() {
     setCurrentPage(page);
   };
 
+  /**
+   * Update user balance after table operations
+   * @param {number} newBalance Updated balance
+   */
+  const updateUserBalance = (newBalance) => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        balance: newBalance
+      };
+      setUser(updatedUser);
+      localStorage.setItem("pokerUser", JSON.stringify(updatedUser));
+    }
+  };
+
+  // Render the appropriate content based on authentication state and loading state
+  const renderContent = () => {
+    // If still loading user data, show loading spinner
+    if (isLoadingUser) {
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      );
+    }
+
+    // If on profile page, show it regardless of authentication
+    if (currentPage === "profile") {
+      return (
+        <ProfilePage
+          user={user}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+          navigateToHome={() => navigateTo("home")}
+        />
+      );
+    }
+
+    // If user is not logged in, show auth required message
+    if (!user) {
+      return (
+        <div className="auth-required">
+          <div className="auth-required-card">
+            <GiPokerHand className="auth-icon" />
+            <h2>Welcome to SPADE Poker</h2>
+            <p>Please log in or create an account to continue</p>
+            <button
+              className="primary-button"
+              onClick={() => navigateTo("profile")}
+            >
+              Login / Register
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // User is logged in, show the appropriate page
+    if (currentPage === "calibration" && atTable && isTableOwner) {
+      return (
+        <CalibrationPage
+          socket={socket}
+          socketConnected={socketConnected}
+          tableId={currentTable?.id}
+        />
+      );
+    }
+
+    // Default to home page for logged in users
+    return (
+      <HomePage
+        socket={socket}
+        socketConnected={socketConnected}
+        darkMode={darkMode}
+        user={user}
+        onTableStatusChange={checkTableStatus}
+        onBalanceUpdate={updateUserBalance}
+      />
+    );
+  };
+
   return (
     <div className={`app ${darkMode ? "dark-theme" : "light-theme"}`}>
       <Header
@@ -250,56 +342,7 @@ function App() {
       />
 
       <main>
-        {isLoadingUser ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading...</p>
-          </div>
-        ) : !user && currentPage !== "profile" ? (
-          // If not logged in and not on profile page, show auth required message
-          <div className="auth-required">
-            <div className="auth-required-card">
-              <GiPokerHand className="auth-icon" />
-              <h2>Welcome to SPADE Poker</h2>
-              <p>Please log in or create an account to continue</p>
-              <button
-                className="primary-button"
-                onClick={() => navigateTo("profile")}
-              >
-                Login / Register
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {currentPage === "home" && (
-              <HomePage
-                socket={socket}
-                socketConnected={socketConnected}
-                darkMode={darkMode}
-                user={user}
-                onTableStatusChange={checkTableStatus}
-              />
-            )}
-
-            {currentPage === "calibration" && atTable && isTableOwner && (
-              <CalibrationPage
-                socket={socket}
-                socketConnected={socketConnected}
-                tableId={currentTable?.id}
-              />
-            )}
-
-            {currentPage === "profile" && (
-              <ProfilePage
-                user={user}
-                onLogin={handleLogin}
-                onLogout={handleLogout}
-                navigateToHome={() => navigateTo("home")}
-              />
-            )}
-          </>
-        )}
+        {renderContent()}
       </main>
     </div>
   );

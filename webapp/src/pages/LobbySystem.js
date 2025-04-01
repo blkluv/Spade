@@ -13,9 +13,10 @@ import TableCard from "../components/lobby/TableCard";
  * @param {function} props.onJoinTable Function to handle joining a table
  * @param {Object} props.currentTable Current table data if user is at a table
  * @param {boolean} props.darkMode Dark mode state
+ * @param {function} props.onBalanceUpdate Function to update user balance
  * @returns {JSX.Element} LobbySystem component
  */
-function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
+function LobbySystem({ user, onJoinTable, currentTable, darkMode, onBalanceUpdate }) {
   // Tables state
   const [tables, setTables] = useState([]);
   const [filteredTables, setFilteredTables] = useState([]);
@@ -140,7 +141,17 @@ function LobbySystem({ user, onJoinTable, currentTable, darkMode }) {
 
     try {
       // Pass the table ID and buy-in amount to the parent component
-      onJoinTable(joinTableId, buyIn);
+      await onJoinTable(joinTableId, buyIn);
+
+      // Fetch updated user balance
+      if (onBalanceUpdate) {
+        try {
+          const userData = await ApiService.getCurrentUser();
+          onBalanceUpdate(userData.balance);
+        } catch (balanceError) {
+          console.error("Failed to update balance:", balanceError);
+        }
+      }
 
       // Reset join form
       setJoinTableId(null);
