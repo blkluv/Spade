@@ -11,6 +11,7 @@ import {PiShuffleBold} from "react-icons/pi";
 import { BsFillVolumeMuteFill } from "react-icons/bs";
 import {BiSolidVolumeFull} from "react-icons/bi";
 import { ImVolumeHigh, ImVolumeLow, ImVolumeMedium, ImVolumeMute2 } from "react-icons/im";
+import SpotifyLyrics from './SpotifyLyrics';
 
 const SpotifyPlayer = ({ token, refreshToken, expiresAt, useLyrics }) => {
   //const [player, setPlayer] = useState(null);
@@ -514,18 +515,19 @@ return (
         </div>
         {/* Right side: Lyrics */}
         {(useLyrics) ? (
-                <div className="lyrics-container">
-          <h3>Lyrics:</h3>
-          {loadingLyrics ? (
-            <p>Loading lyrics...</p>
+          <div className="lyrics-container">
+              <SpotifyLyrics
+                lyrics={lyrics}
+                isPlaying={isPlaying}
+                trackProgress={trackProgress}
+                trackDuration={trackDuration}
+                currentTrack={currentTrack}
+                loadingLyrics={loadingLyrics}
+              />
+            </div>
           ) : (
-              <div ref={lyricsContainerRef} className="lyrics-box" >
-                <pre className="lyrics-text">{lyrics}</pre>
-              </div>
+            <> </>
           )}
-                </div>) :
-            (<> </>)
-        }
       </>
     ) : (
         <p>Loading Player...</p>
