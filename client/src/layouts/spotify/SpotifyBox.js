@@ -52,8 +52,8 @@ function SpotifyBox() {
     >
       <Card
         sx={{
-          width: isFullscreen ? "95%" : "100%",
-          height: isFullscreen ? "95%" : "100%",
+          width: isFullscreen ? "98%" : "100%",
+          height: isFullscreen ? "98%" : "100%",
           backgroundColor: "rgba(255, 255, 255, 0.1)",
           borderRadius: "20px",
           display: "flex",
