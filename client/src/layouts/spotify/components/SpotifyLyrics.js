@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import './SpotifyLyrics.css'; // Make sure to use the enhanced CSS
+import './SpotifyLyrics.css';
 
 const SpotifyLyrics = ({
   lyrics,
@@ -10,175 +10,109 @@ const SpotifyLyrics = ({
   loadingLyrics
 }) => {
   const [parsedLyrics, setParsedLyrics] = useState([]);
-  const [currentLineIndex, setCurrentLineIndex] = useState(-1);
-  const [lineProgress, setLineProgress] = useState(0);
+  const [currentZone, setCurrentZone] = useState(-1);
   const lyricsContainerRef = useRef(null);
-  const lyricsRef = useRef(null);
+  const prevZone = useRef(-1);
+  const ZONE_RADIUS = 3; // Show 3 lines before and after the current line
 
-  // Parse lyrics into lines and estimate if they're actual lyrics or metadata
+  // Add buffers (5% of total duration)
+  const INTRO_BUFFER = trackDuration * 0.04;
+  const OUTRO_BUFFER = trackDuration * 0.02;
+  const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
+
   useEffect(() => {
     if (!lyrics) return;
 
-    // Split lyrics into lines
-    const lines = lyrics.split(/\n+/);
+    const lines = lyrics.split(/\n+/)
+      .filter(line => line.trim() !== '')
+      .map((line, index, arr) => {
+        const text = line.trim();
+        const isGroupStart = /^\[(Verse|Chorus|Bridge|Pre-Chorus|Outro)/i.test(text);
+        const isGroupEnd = index < arr.length - 1 &&
+          /^\[(Verse|Chorus|Bridge|Pre-Chorus|Outro)/i.test(arr[index + 1].trim());
 
-    // Process lines to identify patterns suggesting metadata vs lyrics
-    const processedLines = lines.map((line) => {
-      const trimmedLine = line.trim();
+        return {
+          text,
+          isGroupStart,
+          isGroupEnd,
+          isMetadata: /^\[.*\]$|^[A-Z\s]+:$/.test(text)
+        };
+      });
 
-      // Skip empty lines
-      if (trimmedLine === '') return null;
+    setParsedLyrics(lines);
+  }, [lyrics]);
 
-      // Determine if line is likely metadata
-      const isMetadata = isLikelyMetadata(trimmedLine);
-
-      return {
-        text: trimmedLine,
-        isMetadata
-      };
-    }).filter(line => line !== null);
-
-    // Assign timestamps
-    const timedLines = assignTimestamps(processedLines, trackDuration);
-
-    setParsedLyrics(timedLines);
-  }, [lyrics, trackDuration]);
-
-  // Identify possible metadata lines (patterns commonly found in non-lyric text)
-  const isLikelyMetadata = (line) => {
-    // Common patterns that suggest metadata rather than lyrics
-    const metadataPatterns = [
-      /^\[.*\]$/, // Content in square brackets like [Verse], [Chorus]
-      /^[0-9]+:[0-9]+$/, // Just timestamps
-      /^\(.+\)$/, // Content in parentheses only like (repeat)
-      /^[A-Z\s]+:/, // ALL CAPS followed by colon like "VERSE:"
-      /^[\w\s]+ x\d+$/ // Repetition indicators like "Chorus x4"
-    ];
-
-    return metadataPatterns.some(pattern => pattern.test(line)) ||
-           (line.length < 12 && line.toUpperCase() === line); // Short ALL CAPS lines
-  };
-
-  // Assign estimated timestamps to lines
-  const assignTimestamps = (lines, duration) => {
-    if (!lines.length) return [];
-
-    // Count lyrics (non-metadata) for more accurate timing
-    const lyricsCount = lines.filter(line => !line.isMetadata).length;
-
-    let currentTime = 0;
-    // Keep some buffer at start and end (15% each)
-    const actualDuration = duration * 0.7;
-    const startBuffer = duration * 0.15;
-
-    // Calculate average time per actual lyric line
-    const timePerLyricLine = lyricsCount > 0 ? actualDuration / lyricsCount : actualDuration / lines.length;
-
-    // Add timestamps
-    return lines.map((line, index) => {
-      // Metadata takes less time
-      const lineTime = line.isMetadata ? timePerLyricLine * 0.3 : timePerLyricLine;
-
-      const timestamp = startBuffer + currentTime;
-
-      // For next line
-      currentTime += lineTime;
-
-      return {
-        ...line,
-        timestamp,
-        duration: lineTime
-      };
-    });
-  };
-
-  // Track current line based on song progress
   useEffect(() => {
-    if (!parsedLyrics.length || trackProgress === 0) return;
+    if (!parsedLyrics.length || !trackDuration) return;
 
-    // Find current line
-    const newCurrentIndex = parsedLyrics.findLastIndex(
-      line => line.timestamp <= trackProgress
-    );
+    // Adjust progress for buffers
+    const adjustedProgress = Math.max(0, trackProgress - INTRO_BUFFER);
+    const progressPercentage = Math.min(1, Math.max(0, adjustedProgress / EFFECTIVE_DURATION));
 
-    if (newCurrentIndex !== currentLineIndex) {
-      setCurrentLineIndex(newCurrentIndex);
-      setLineProgress(0); // Reset progress for new line
-    } else if (newCurrentIndex >= 0 && newCurrentIndex < parsedLyrics.length - 1) {
-      // Calculate progress within current line (0-100%)
-      const currentLine = parsedLyrics[newCurrentIndex];
-      const nextLine = parsedLyrics[newCurrentIndex + 1];
-      const lineStartTime = currentLine.timestamp;
-      const lineEndTime = nextLine.timestamp;
-      const lineLength = lineEndTime - lineStartTime;
+    // Calculate weighted distribution
+    const lineWeights = parsedLyrics.map(line => {
+      if (line.isMetadata) return 0.3;
+      const lengthWeight = Math.min(2, Math.max(0.5, line.text.length / 25));
+      return lengthWeight;
+    });
 
-      if (lineLength > 0) {
-        const progress = ((trackProgress - lineStartTime) / lineLength) * 100;
-        setLineProgress(Math.min(progress, 100));
-      }
+    const totalWeight = lineWeights.reduce((a, b) => a + b, 0);
+    let accumulatedWeight = 0;
+    let currentIndex = 0;
+
+    while (
+      currentIndex < parsedLyrics.length - 1 &&
+      accumulatedWeight / totalWeight < progressPercentage
+    ) {
+      accumulatedWeight += lineWeights[currentIndex];
+      currentIndex++;
     }
-  }, [trackProgress, parsedLyrics, currentLineIndex]);
 
-  // Scroll to current line
+    setCurrentZone(Math.max(0, Math.min(currentIndex, parsedLyrics.length - 1)));
+  }, [trackProgress, trackDuration, parsedLyrics]);
+
   useEffect(() => {
-    if (currentLineIndex === -1 || !lyricsContainerRef.current || !isPlaying) return;
+    if (!lyricsContainerRef.current || currentZone === -1) return;
 
-    const lineElements = lyricsRef.current?.children;
-    if (!lineElements || !lineElements[currentLineIndex]) return;
+    const container = lyricsContainerRef.current;
+    const targetLine = container.querySelector(`[data-index="${currentZone}"]`);
 
-    const currentLineElement = lineElements[currentLineIndex];
-    const containerElement = lyricsContainerRef.current;
+    if (targetLine) {
+      const containerHeight = container.clientHeight;
+      const targetPos = targetLine.offsetTop - (containerHeight / 2);
+      const scrollVelocity = Math.min(1, Math.max(0.2, Math.abs(currentZone - prevZone.current) / 5));
 
-    // Smooth scrolling to center the current line
-    containerElement.scrollTo({
-      top: currentLineElement.offsetTop -
-           containerElement.clientHeight / 2 +
-           currentLineElement.clientHeight / 2,
-      behavior: 'smooth'
-    });
-  }, [currentLineIndex, isPlaying]);
+      container.scrollTo({
+        top: targetPos,
+        behavior: 'auto',
+        smooth: 'easeInOutCubic',
+        duration: 500 * scrollVelocity
+      });
 
-  // Render lyrics with dynamic styling
-  const renderLyrics = () => {
-    return parsedLyrics.map((line, index) => {
-      // Determine line class
-      let lineClass = 'lyrics-line';
+      prevZone.current = currentZone;
+    }
+  }, [currentZone]);
 
-      if (line.isMetadata) {
-        lineClass += ' metadata';
-      }
+  const getLineClass = (index) => {
+    const distance = Math.abs(index - currentZone);
+    let className = 'lyrics-line';
 
-      // Style based on relative position to current line
-      if (index === currentLineIndex) {
-        lineClass += ' current-line';
-      } else if (index < currentLineIndex) {
-        lineClass += ' passed';
-      } else if (index === currentLineIndex + 1) {
-        lineClass += ' upcoming-1';
-      } else if (index === currentLineIndex + 2) {
-        lineClass += ' upcoming-2';
-      } else if (index === currentLineIndex + 3) {
-        lineClass += ' upcoming-3';
-      }
+    if (index === currentZone) {
+      className += ' current-line';
+    } else if (distance <= ZONE_RADIUS) {
+      className += ` context-${distance}`;
+      // Add secondary highlight for immediate neighbors
+      if (distance === 1) className += ' secondary-highlight';
+      // Highlight the 2nd and 3rd top and bottom lines with a more subtle class
+      else if (distance === 2) className += ' secondary-highlight-faded';
+    }
 
-      return (
-        <div
-          key={index}
-          className={lineClass}
-        >
-          {line.text}
-          {index === currentLineIndex && (
-            <div
-              className="current-line-progress"
-              style={{ width: `${lineProgress}%` }}
-            />
-          )}
-        </div>
-      );
-    });
+    if (parsedLyrics[index]?.isGroupStart) className += ' group-start';
+    if (parsedLyrics[index]?.isGroupEnd) className += ' group-end';
+
+    return className;
   };
 
-  // Loading state
   if (loadingLyrics) {
     return (
       <div className="spotify-lyrics-container">
@@ -190,7 +124,6 @@ const SpotifyLyrics = ({
     );
   }
 
-  // No lyrics fallback
   if (!lyrics || lyrics.trim() === '') {
     return (
       <div className="spotify-lyrics-container">
@@ -203,15 +136,25 @@ const SpotifyLyrics = ({
 
   return (
     <div className="spotify-lyrics-container">
-      <div className="lyrics-title">
-        Lyrics
-      </div>
-      <div
-        ref={lyricsContainerRef}
-        className="lyrics-scroll-container"
-      >
-        <div ref={lyricsRef} className="lyrics-content">
-          {renderLyrics()}
+      <div className="lyrics-title">Lyrics</div>
+      <div ref={lyricsContainerRef} className="lyrics-scroll-container">
+        <div className="lyrics-content">
+          {parsedLyrics.map((line, index) => (
+            <div
+              key={index}
+              className={getLineClass(index)}
+              data-index={index}
+              data-current={index === currentZone}
+            >
+              {line.text}
+              {index === currentZone && (
+                <div className="current-line-progress" />
+              )}
+              {(Math.abs(index - currentZone) <= 2) && (
+                <div className="possible-position-marker" />
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

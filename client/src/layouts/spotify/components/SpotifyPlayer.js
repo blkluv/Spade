@@ -515,7 +515,8 @@ return (
         </div>
         {/* Right side: Lyrics */}
         {(useLyrics) ? (
-          <div className="lyrics-container">
+          // In the return statement, update the lyrics container:
+            <div className="lyrics-container">
               <SpotifyLyrics
                 lyrics={lyrics}
                 isPlaying={isPlaying}
