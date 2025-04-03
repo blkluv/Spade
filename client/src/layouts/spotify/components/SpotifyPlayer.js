@@ -30,6 +30,7 @@ const SpotifyPlayer = ({ token, refreshToken, expiresAt, useLyrics }) => {
   const [isMuted, setIsMuted] = useState(false);
   const lyricsContainerRef = useRef(null); // Ref for the lyrics container
   const [isAutoScrolling, setIsAutoScrolling] = useState(false); // Track if auto-scroll is active
+  const progressBarRef = useRef(null); // Ref for the progress bar container
 
   useEffect(() => {
     const refreshAccessToken = async () => {
@@ -99,6 +100,33 @@ const SpotifyPlayer = ({ token, refreshToken, expiresAt, useLyrics }) => {
         }
       });
     }
+  };
+
+  // New function to handle progress bar clicks
+  const handleProgressClick = (e) => {
+    if (!player.current || !trackDuration) return;
+
+    const progressBarElement = progressBarRef.current;
+    if (!progressBarElement) return;
+
+    // Calculate relative position based on click
+    const rect = progressBarElement.getBoundingClientRect();
+    const clickPositionX = e.clientX - rect.left;
+    const progressBarWidth = rect.width;
+
+    // Calculate position as a percentage (0-1)
+    const positionRatio = Math.max(0, Math.min(1, clickPositionX / progressBarWidth));
+
+    // Convert to milliseconds
+    const seekPositionMs = Math.floor(positionRatio * trackDuration);
+
+    // Seek to the position
+    player.current.seek(seekPositionMs).then(() => {
+      // Update track progress immediately for smoother UI response
+      setTrackProgress(seekPositionMs);
+    }).catch(error => {
+      console.error('Error while seeking:', error);
+    });
   };
 
   async function checkShuffleState() {
@@ -467,7 +495,12 @@ return (
               <p className="track-duration">
                 {formatDuration(trackProgress)} / {formatDuration(trackDuration)}
               </p>
-              <div className="progress-bar-container">
+              <div
+                className="progress-bar-container"
+                ref={progressBarRef}
+                onClick={handleProgressClick}
+                style={{ cursor: 'pointer' }}
+              >
                 <div
                     className="progress-bar"
                     style={{width: `${progressPercentage}%`}}

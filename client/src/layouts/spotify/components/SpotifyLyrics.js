@@ -16,8 +16,8 @@ const SpotifyLyrics = ({
   const ZONE_RADIUS = 3; // Show 3 lines before and after the current line
 
   // Add buffers (5% of total duration)
-  const INTRO_BUFFER = trackDuration * 0.04;
-  const OUTRO_BUFFER = trackDuration * 0.02;
+  const INTRO_BUFFER = trackDuration * 0.02;
+  const OUTRO_BUFFER = trackDuration * 0.01;
   const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
 
   useEffect(() => {
