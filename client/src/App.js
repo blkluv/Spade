@@ -1,32 +1,21 @@
-import { useState, useEffect, useMemo } from "react";
-
-// react-router components
+import { useState, useEffect } from "react";
 import { Routes, Navigate, Route, useLocation } from "react-router-dom";
-
-// @mui material components
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Icon from "@mui/material/Icon";
-
-// Vision UI Dashboard React components
 import VuiBox from "./components/VuiBox";
-
-// Vision UI Dashboard React example components
 import Sidenav from "./examples/Sidenav";
 import Configurator from "./examples/Configurator";
-
-// Vision UI Dashboard React themes
 import theme from "./assets/theme";
 import themeRTL from "./assets/theme/theme-rtl";
-
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
-
-// Vision UI Dashboard React routes
 import routes from "./routes";
-
-// Vision UI Dashboard React contexts
 import { useVisionUIController, setMiniSidenav, setOpenConfigurator } from "./context";
+
+// Import SpotifyProvider and the mini player
+import { SpotifyProvider } from "./context/SpotifyContext";
+import SpotifyMiniPlayer from "./layouts/spotify/SpotifyMiniPlayer";
 
 export default function App() {
   const [controller, dispatch] = useVisionUIController();
@@ -102,53 +91,63 @@ export default function App() {
     </VuiBox>
   );
 
-  return direction === "rtl" ? (
-    <CacheProvider value={rtlCache}>
-      <ThemeProvider theme={themeRTL}>
-        <CssBaseline />
-        {layout === "dashboard" && (
-          <>
-            <Sidenav
-              color={sidenavColor}
-              brand="SPADE"
-              brandName="SPADE"
-              routes={routes}
-              onMouseEnter={handleOnMouseEnter}
-              onMouseLeave={handleOnMouseLeave}
-            />
-            <Configurator />
-            {configsButton}
-          </>
-        )}
-        {layout === "vr" && <Configurator />}
-        <Routes>
-          {getRoutes(routes)}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </ThemeProvider>
-    </CacheProvider>
-  ) : (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {layout === "dashboard" && (
-        <>
-          <Sidenav
-            color={sidenavColor}
-            brand=""
-            brandName="SPADE"
-            routes={routes}
-            onMouseEnter={handleOnMouseEnter}
-            onMouseLeave={handleOnMouseLeave}
-          />
-          <Configurator />
-          {configsButton}
-        </>
+  return (
+    <SpotifyProvider>
+      {direction === "rtl" ? (
+        <CacheProvider value={rtlCache}>
+          <ThemeProvider theme={themeRTL}>
+            <CssBaseline />
+            {layout === "dashboard" && (
+              <>
+                <Sidenav
+                  color={sidenavColor}
+                  brand="SPADE"
+                  brandName="SPADE"
+                  routes={routes}
+                  onMouseEnter={handleOnMouseEnter}
+                  onMouseLeave={handleOnMouseLeave}
+                />
+                <Configurator />
+                {configsButton}
+              </>
+            )}
+            {layout === "vr" && <Configurator />}
+            <Routes>
+              {getRoutes(routes)}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+
+            {/* Global Mini Player - visible on all routes */}
+            <SpotifyMiniPlayer />
+          </ThemeProvider>
+        </CacheProvider>
+      ) : (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {layout === "dashboard" && (
+            <>
+              <Sidenav
+                color={sidenavColor}
+                brand=""
+                brandName="SPADE"
+                routes={routes}
+                onMouseEnter={handleOnMouseEnter}
+                onMouseLeave={handleOnMouseLeave}
+              />
+              <Configurator />
+              {configsButton}
+            </>
+          )}
+          {layout === "vr" && <Configurator />}
+          <Routes>
+            {getRoutes(routes)}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+
+          {/* Global Mini Player - visible on all routes */}
+          <SpotifyMiniPlayer />
+        </ThemeProvider>
       )}
-      {layout === "vr" && <Configurator />}
-      <Routes>
-        {getRoutes(routes)}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </ThemeProvider>
+    </SpotifyProvider>
   );
 }

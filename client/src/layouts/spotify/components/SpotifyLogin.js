@@ -1,13 +1,12 @@
 import React from "react";
 import VuiButton from "../../../components/VuiButton";
-import { FaSpotify } from "react-icons/fa"; // Import des Spotify-Icons
+import { FaSpotify } from "react-icons/fa";
 
-const serverAddress = "https://localhost:5000"; // Backend-Adresse
-console.log("Server Address:", serverAddress);
+const serverAddress = "https://localhost:5000"; // Backend address
 
-const SpotifyLogin = ({ onLoginSuccess }) => {
+const SpotifyLogin = () => {
   const loginWithSpotify = () => {
-    // Umleitung zur Spotify-Authentifizierungs-URL des Servers
+    // Redirect to Spotify authentication URL
     window.location.href = `${serverAddress}/login`;
   };
 
@@ -40,7 +39,7 @@ const SpotifyLogin = ({ onLoginSuccess }) => {
         color="info"
         style={buttonStyle}
       >
-        <FaSpotify size={25} /> {/* Spotify-Icon */}
+        <FaSpotify size={25} />
         Login with Spotify
       </VuiButton>
     </div>

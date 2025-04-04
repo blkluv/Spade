@@ -1,6 +1,5 @@
 import React from "react";
-import { Grid, Card } from "@mui/material";
-import { useMediaQuery } from "@mui/material";
+import { Card } from "@mui/material";
 
 // Vision UI Dashboard components
 import VuiBox from "../../components/VuiBox";
@@ -9,10 +8,8 @@ import VuiTypography from "../../components/VuiTypography";
 import DashboardLayout from "../../examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "../../examples/Navbars/DashboardNavbar";
 import Footer from "../../examples/Footer";
-import WelcomeMark from "./components/WelcomeMark";
 
-// Import SpotifyBox and Poker Game
-import SpotifyBox from "../spotify/SmallSpotifyBox";
+// Import Poker Game
 import Poker from "../poker/PokerGameBox";
 
 // Data for the Line Chart
@@ -21,8 +18,6 @@ import { lineChartOptionsDashboard } from "./data/lineChartOptions";
 import LineChart from "../../examples/Charts/LineCharts/LineChart";
 
 function Dashboard() {
-  const isSmallScreen = useMediaQuery("(max-width: 960px)"); // Breakpoint for smaller screens (responsive)
-
   return (
     <div
       style={{
@@ -37,38 +32,23 @@ function Dashboard() {
       <DashboardLayout>
         <DashboardNavbar />
         <VuiBox py={3} sx={{ flexGrow: 1 }}>
+          {/* Full-width Poker Game */}
           <VuiBox mb={3}>
-            {/* Grid Layout */}
-            <Grid container spacing={2}>
-              {/* Left Section: Welcome and Spotify */}
-                <Grid item xs={12} lg={4} xl={2}>
-                {/* WelcomeMark */}
-                <VuiBox mb={3}>
-                  <WelcomeMark />
-                </VuiBox>
-                {/* SpotifyBox Component */}
-                <SpotifyBox />
-              </Grid>
-
-              {/* Right Section: Poker Game */}
-                <Grid item xs={12} lg={8} xl={10}>
-                    <VuiBox
-                      position="relative"
-                      sx={{
-                        width: "100%",
-                        minHeight: "200px",
-                        height: "auto",
-                        transition: "all 0.3s ease",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                  {/* Poker Game Integration */}
-                  <Poker />
-                </VuiBox>
-              </Grid>
-            </Grid>
+            <VuiBox
+              position="relative"
+              sx={{
+                width: "100%",
+                minHeight: "400px", // Increased height
+                height: "auto",
+                transition: "all 0.3s ease",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              {/* Poker Game Integration */}
+              <Poker />
+            </VuiBox>
           </VuiBox>
 
           {/* Line Chart Section */}
@@ -94,6 +74,8 @@ function Dashboard() {
           <Footer />
         </VuiBox>
       </DashboardLayout>
+
+      {/* No need to include SpotifyMiniPlayer here anymore, it will be added at the app root level */}
     </div>
   );
 }
