@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@mui/material";
 import SpotifyComponent from "./components/SpotifyComponent";
-import { useSpotify } from "../../context/SpotifyContext";
+import { useSpotify } from "./SpotifyContext";
 import { useNavigate } from "react-router-dom";
 import VuiButton from "../../components/VuiButton";
 import { FullscreenOutlined } from "@mui/icons-material";

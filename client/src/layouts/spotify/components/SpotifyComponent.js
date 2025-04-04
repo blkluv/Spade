@@ -1,7 +1,7 @@
 import React from "react";
 import SpotifyLogin from "./SpotifyLogin";
 import SpotifyPlayer from "./SpotifyPlayer";
-import { useSpotify } from "../../../context/SpotifyContext";
+import { useSpotify } from "../SpotifyContext";
 
 const SpotifyComponent = ({ useLyrics = true }) => {
   // Get token from context instead of managing local state

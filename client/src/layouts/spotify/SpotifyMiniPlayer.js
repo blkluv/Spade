@@ -9,7 +9,7 @@ import {
   MusicNote,
   OpenInFull,
 } from "@mui/icons-material";
-import { useSpotify } from "../../context/SpotifyContext";
+import { useSpotify } from "./SpotifyContext";
 
 // Styles
 const miniPlayerStyles = {

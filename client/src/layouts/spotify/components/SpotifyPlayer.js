@@ -11,7 +11,7 @@ import { ImVolumeHigh, ImVolumeLow, ImVolumeMedium, ImVolumeMute2 } from "react-
 import SpotifyLyrics from './SpotifyLyrics';
 
 // Import our Spotify context hook
-import { useSpotify } from "../../../context/SpotifyContext";
+import { useSpotify } from "../SpotifyContext";
 
 const SpotifyPlayer = ({ useLyrics = true }) => {
   // Use the context instead of props and local state

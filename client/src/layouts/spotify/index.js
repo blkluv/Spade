@@ -9,7 +9,7 @@ import Footer from "../../examples/Footer";
 
 // Import SpotifyBox
 import SpotifyBox from "./SpotifyBox";
-import { useSpotify } from "../../context/SpotifyContext";
+import { useSpotify } from "./SpotifyContext";
 
 function Spotify() {
   const isSmallScreen = useMediaQuery("(max-width: 960px)"); // Responsive Breakpoint
