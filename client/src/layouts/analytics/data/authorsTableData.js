@@ -156,8 +156,8 @@ export default {
       ),
     },
     {
-      player: <Player image={JuraJonas} name="Jura Jonas" username="LMU" />,
-      pnl: <PnL value={getLatestPnL("Jura Jonas")} />,
+      player: <Player image={JuraJonas} name="Gast #2" username="JURA + RUSSE" />,
+      pnl: <PnL value={getLatestPnL("Gast #2")} />,
       status: (
         <VuiBadge
           variant="standard"
@@ -206,8 +206,8 @@ export default {
       ),
     },
     {
-      player: <Player image={Eliah} name="Eliah" username="Dr. BWL" />,
-      pnl: <PnL value={getLatestPnL("Eliah")} />, // Synchronisierter "PnL"-Wert
+      player: <Player image={Eliah} name="Gast #1" username="Dr. BWL" />,
+      pnl: <PnL value={getLatestPnL("Gast #1")} />, // Synchronisierter "PnL"-Wert
       status: (
         <VuiBadge
           variant="standard"

@@ -17,7 +17,8 @@ export const lineChartDataDashboard = [
       41.05,
       66.5,
       60.6,
-      74.25
+      74.25,
+      68.85
     ]
   },
   {
@@ -38,7 +39,8 @@ export const lineChartDataDashboard = [
       -70.85,
       -70.85,
       -57.85,
-      -57.85
+      -57.85,
+      -58.65
     ]
   },
   {
@@ -58,6 +60,7 @@ export const lineChartDataDashboard = [
       -34.3,
       -39.6,
       -39.6,
+      -44.3,
       -44.3,
       -44.3
     ]
@@ -80,7 +83,8 @@ export const lineChartDataDashboard = [
       -39.7,
       -33.5,
       -24,
-      -29
+      -29,
+      -39
     ]
   },
   {
@@ -101,11 +105,12 @@ export const lineChartDataDashboard = [
       66.35,
       62.05,
       41.75,
-      41.8
+      41.8,
+      52.65
     ]
   },
   {
-    "name": "Jura Jonas",
+    "name": "Gast #2",
     "data": [
       0,
       0,
@@ -122,7 +127,8 @@ export const lineChartDataDashboard = [
       10.7,
       10.7,
       10.7,
-      10.7
+      10.7,
+      11.55
     ]
   },
   {
@@ -143,11 +149,12 @@ export const lineChartDataDashboard = [
       21.9,
       -5.45,
       2.95,
-      -5.75
+      -5.75,
+      -1.25
     ]
   },
   {
-    "name": "Eliah",
+    "name": "Gast #1",
     "data": [
       0,
       0,
@@ -155,6 +162,7 @@ export const lineChartDataDashboard = [
       0,
       0,
       0,
+      10.15,
       10.15,
       10.15,
       10.15,

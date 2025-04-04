@@ -23,7 +23,8 @@ export const lineChartOptionsDashboard = {
   "Day 12",
   "Day 13",
   "Day 14",
-  "Day 15"
+  "Day 15",
+  "Day 16"
 ],
     labels: {
       style: { colors: "#FFF", fontSize: "12px", fontWeight: "600" },
