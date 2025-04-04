@@ -14,7 +14,7 @@ import routes from "./routes";
 import { useVisionUIController, setMiniSidenav, setOpenConfigurator } from "./context";
 
 // Import SpotifyProvider and the mini player
-import { SpotifyProvider } from "./layouts/spotify/SpotifyContext";
+import { SpotifyProvider } from "./context/SpotifyContext";
 import SpotifyMiniPlayer from "./layouts/spotify/SpotifyMiniPlayer";
 
 export default function App() {
