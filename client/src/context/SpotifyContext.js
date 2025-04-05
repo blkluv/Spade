@@ -35,6 +35,18 @@ export const SpotifyProvider = ({ children }) => {
   const playerCheckIntervalRef = useRef(null);
   const progressIntervalRef = useRef(null);
   const lastTrackIdRef = useRef(null);
+  const isPlayingRef = useRef(isPlaying);
+  const trackDurationRef = useRef(trackDuration);
+
+
+  // Update refs when state changes
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    trackDurationRef.current = trackDuration;
+  }, [trackDuration]);
 
   // Extract token from hash on mount
   useEffect(() => {
@@ -187,13 +199,15 @@ export const SpotifyProvider = ({ children }) => {
 
       // Set up a progress interval to update track progress
       progressIntervalRef.current = setInterval(() => {
-        if (isPlaying) {
+        if (isPlayingRef.current) { // Use ref value
           setTrackProgress(prev => {
-            const newProgress = prev + 1000;
-            return newProgress > trackDuration ? trackDuration : newProgress;
+            const newProgress = prev + 1000; // Correct increment to 2000ms
+            return newProgress > trackDurationRef.current
+              ? trackDurationRef.current
+              : newProgress;
           });
         }
-      }, 2000);
+      }, 1000);
 
       // Set up a health check interval
       playerCheckIntervalRef.current = setInterval(() => {
