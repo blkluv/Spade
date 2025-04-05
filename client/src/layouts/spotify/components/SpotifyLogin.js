@@ -1,13 +1,13 @@
+// client/src/layouts/spotify/components/SpotifyLogin.js
 import React from "react";
 import VuiButton from "../../../components/VuiButton";
 import { FaSpotify } from "react-icons/fa";
-
-const serverAddress = "https://localhost:5000"; // Backend address
+import SpotifyApiService from "../../../services/SpotifyApiService";
 
 const SpotifyLogin = () => {
   const loginWithSpotify = () => {
-    // Redirect to Spotify authentication URL
-    window.location.href = `${serverAddress}/login`;
+    // Redirect to Spotify authentication URL via Spring Boot backend
+    window.location.href = SpotifyApiService.getLoginUrl();
   };
 
   const centerStyle = {
