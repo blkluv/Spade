@@ -218,7 +218,7 @@ export const SpotifyProvider = ({ children }) => {
             setIsPlayerHealthy(true);
           }
         });
-      }, 1000);
+      }, 5000);
 
       return () => {
         player.disconnect();
