@@ -21,6 +21,10 @@ export const SpotifyProvider = ({ children }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isShuffle, setIsShuffle] = useState(false);
 
+  // Control states
+  const [isControlBusy, setIsControlBusy] = useState(false);
+  const [isPlayerHealthy, setIsPlayerHealthy] = useState(true);
+
   // Lyrics state
   const [lyrics, setLyrics] = useState(null);
   const [loadingLyrics, setLoadingLyrics] = useState(false);
@@ -32,6 +36,9 @@ export const SpotifyProvider = ({ children }) => {
   const lastPositionUpdateRef = useRef(0);
   const lastPositionUpdateTimeRef = useRef(0);
   const previousTrackIdRef = useRef(null);
+  const controlTimeoutRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const lastPlayerActionTime = useRef(Date.now());
 
   // Initialize token from localStorage or URL hash on mount
   useEffect(() => {
@@ -87,6 +94,51 @@ export const SpotifyProvider = ({ children }) => {
     }
   }, []);
 
+  // Health check function to verify player is responding
+  const checkPlayerHealth = async () => {
+    if (!playerRef.current) return false;
+
+    try {
+      const state = await playerRef.current.getCurrentState();
+      // If we get a valid response, the player is healthy
+      setIsPlayerHealthy(true);
+      return true;
+    } catch (error) {
+      console.error("Player health check failed:", error);
+      setIsPlayerHealthy(false);
+      return false;
+    }
+  };
+
+  // Attempt to reconnect the player
+  const attemptReconnect = async () => {
+    if (!token || reconnectAttempts.current > 3) return false;
+
+    console.log(`Attempting to reconnect Spotify player (attempt ${reconnectAttempts.current + 1})...`);
+
+    try {
+      if (playerRef.current) {
+        await playerRef.current.disconnect();
+      }
+
+      // Small delay before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const success = await playerRef.current.connect();
+      if (success) {
+        console.log("Spotify player reconnected successfully!");
+        setIsPlayerHealthy(true);
+        reconnectAttempts.current = 0;
+        return true;
+      }
+    } catch (error) {
+      console.error("Error reconnecting player:", error);
+    }
+
+    reconnectAttempts.current++;
+    return false;
+  };
+
   // Initialize Spotify SDK when token is available
   useEffect(() => {
     if (!token) return;
@@ -110,10 +162,16 @@ export const SpotifyProvider = ({ children }) => {
         console.log("Ready with Device ID:", device_id);
         setDeviceId(device_id);
         setIsReady(true);
+        setIsPlayerHealthy(true);
+        reconnectAttempts.current = 0;
       });
 
       spotifyPlayer.addListener("player_state_changed", (state) => {
         if (!state) return;
+
+        // Mark player as healthy since we received a state update
+        setIsPlayerHealthy(true);
+        reconnectAttempts.current = 0;
 
         const track = state.track_window.current_track;
 
@@ -138,10 +196,29 @@ export const SpotifyProvider = ({ children }) => {
           setTrackId(track.id);
           previousTrackIdRef.current = track.id;
         }
+
+        // Release control busy state after state update
+        setIsControlBusy(false);
       });
 
       spotifyPlayer.addListener("not_ready", ({ device_id }) => {
         console.log("Device ID has gone offline", device_id);
+        setIsPlayerHealthy(false);
+      });
+
+      spotifyPlayer.addListener("initialization_error", ({ message }) => {
+        console.error("Initialization error:", message);
+        setIsPlayerHealthy(false);
+      });
+
+      spotifyPlayer.addListener("authentication_error", ({ message }) => {
+        console.error("Authentication error:", message);
+        setIsPlayerHealthy(false);
+      });
+
+      spotifyPlayer.addListener("account_error", ({ message }) => {
+        console.error("Account error:", message);
+        setIsPlayerHealthy(false);
       });
 
       // Connect player
@@ -149,6 +226,10 @@ export const SpotifyProvider = ({ children }) => {
         .then(success => {
           if (success) {
             console.log("Spotify Web Playback SDK connected successfully");
+            setIsPlayerHealthy(true);
+          } else {
+            console.error("Failed to connect to Spotify Web Playback SDK");
+            setIsPlayerHealthy(false);
           }
         });
 
@@ -275,6 +356,26 @@ export const SpotifyProvider = ({ children }) => {
     fetchLyrics();
   }, [trackId]); // Only depend on trackId, which only changes for new tracks
 
+  // Player health check effect
+  useEffect(() => {
+    // Check player health if we haven't received any state updates in 15 seconds
+    const healthCheckInterval = setInterval(async () => {
+      const timeSinceLastAction = Date.now() - lastPlayerActionTime.current;
+
+      // If it's been more than 15 seconds since the last action and we're supposedly playing
+      if (isPlaying && timeSinceLastAction > 15000) {
+        const isHealthy = await checkPlayerHealth();
+
+        // If player is not healthy, try to reconnect
+        if (!isHealthy) {
+          attemptReconnect();
+        }
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(healthCheckInterval);
+  }, [isPlaying]);
+
   // Helper function to start progress interval with improved time tracking
   const startProgressInterval = () => {
     // Clear any existing interval
@@ -283,7 +384,6 @@ export const SpotifyProvider = ({ children }) => {
     }
 
     // Start new interval to update progress more frequently (every 100ms)
-    // This creates smoother progress updates between actual SDK state updates
     progressInterval.current = setInterval(() => {
       if (playerRef.current && isPlaying) {
         // Every 3 seconds, get the actual position from the player
@@ -294,6 +394,13 @@ export const SpotifyProvider = ({ children }) => {
               setTrackProgress(state.position);
               lastPositionUpdateRef.current = state.position;
               lastPositionUpdateTimeRef.current = Date.now();
+              lastPlayerActionTime.current = Date.now(); // Update the last action time
+            }
+          }).catch(err => {
+            console.warn("Failed to get current state:", err);
+            // This might indicate player health issues
+            if (Date.now() - lastPlayerActionTime.current > 10000) {
+              setIsPlayerHealthy(false);
             }
           });
         } else {
@@ -314,75 +421,141 @@ export const SpotifyProvider = ({ children }) => {
     }, 100); // Update much more frequently for smoother progress
   };
 
-  // Player control functions
-  const togglePlay = () => {
-    if (!playerRef.current) return;
+  // Safe execute for player actions
+  const safeExecutePlayerAction = async (action, fallbackAction = null) => {
+    // Don't allow new actions if we're busy or player is unhealthy
+    if (isControlBusy) {
+      console.log("Control action ignored - controls are busy");
+      return false;
+    }
 
-    if (currentTrack === null && deviceId) {
-      // Start playlist if no track is playing
-      startPlaylistPlayback(deviceId);
-    } else {
-      playerRef.current.togglePlay().catch((err) => {
-        console.error("Toggle play error:", err);
-      });
+    // Set busy state to prevent multiple rapid actions
+    setIsControlBusy(true);
+    lastPlayerActionTime.current = Date.now();
+
+    // Clear any existing timeout
+    if (controlTimeoutRef.current) {
+      clearTimeout(controlTimeoutRef.current);
+    }
+
+    try {
+      // Check player health first
+      const isHealthy = isPlayerHealthy || await checkPlayerHealth();
+
+      if (!isHealthy) {
+        console.log("Player is not healthy, attempting to reconnect...");
+        const reconnected = await attemptReconnect();
+
+        if (!reconnected) {
+          console.error("Failed to reconnect player, action cannot be performed");
+          setIsControlBusy(false);
+          return false;
+        }
+      }
+
+      // Execute the action
+      await action();
+
+      // Set a timeout to release the busy state if we don't get a state update
+      controlTimeoutRef.current = setTimeout(() => {
+        setIsControlBusy(false);
+      }, 1500);
+
+      return true;
+    } catch (error) {
+      console.error("Error executing player action:", error);
+
+      // Try fallback action if provided
+      if (fallbackAction) {
+        try {
+          await fallbackAction();
+          console.log("Fallback action executed successfully");
+        } catch (fallbackError) {
+          console.error("Fallback action also failed:", fallbackError);
+        }
+      }
+
+      // Release busy state
+      setIsControlBusy(false);
+      return false;
     }
   };
 
-  const skipToNext = () => {
-    if (!playerRef.current) return;
+  // Player control functions with improved error handling
+  const togglePlay = () => {
+    // If we don't have a track playing and we have a device ID, start playlist
+    if (currentTrack === null && deviceId) {
+      startPlaylistPlayback(deviceId);
+      return;
+    }
 
-    playerRef.current.nextTrack().catch((err) => {
-      console.error("Next track error:", err);
+    safeExecutePlayerAction(async () => {
+      await playerRef.current.togglePlay();
+      console.log("Toggle play executed");
+
+      // Optimistic UI update
+      setIsPlaying(!isPlaying);
+    });
+  };
+
+  const skipToNext = () => {
+    safeExecutePlayerAction(async () => {
+      await playerRef.current.nextTrack();
+      console.log("Skip to next executed");
     });
   };
 
   const skipToPrevious = () => {
-    if (!playerRef.current) return;
-
-    playerRef.current.previousTrack().catch((err) => {
-      console.error("Previous track error:", err);
+    safeExecutePlayerAction(async () => {
+      await playerRef.current.previousTrack();
+      console.log("Skip to previous executed");
     });
   };
 
   const seek = (positionMs) => {
-    if (!playerRef.current) return;
+    safeExecutePlayerAction(async () => {
+      await playerRef.current.seek(positionMs);
+      console.log("Seek executed to position:", positionMs);
 
-    playerRef.current.seek(positionMs).then(() => {
+      // Update the progress immediately for better UX
       setTrackProgress(positionMs);
       lastPositionUpdateRef.current = positionMs;
       lastPositionUpdateTimeRef.current = Date.now();
-    }).catch((err) => {
-      console.error("Seek error:", err);
     });
   };
 
   const setPlayerVolume = (value) => {
-    if (!playerRef.current) return;
+    safeExecutePlayerAction(async () => {
+      const normalizedVolume = value / 100;
+      await playerRef.current.setVolume(normalizedVolume);
+      console.log("Volume set to:", value);
 
-    const normalizedVolume = value / 100;
-    playerRef.current.setVolume(normalizedVolume).then(() => {
+      // Update state
       setVolume(value);
       if (isMuted && value > 0) setIsMuted(false);
-    }).catch((err) => {
-      console.error("Set volume error:", err);
     });
   };
 
   const toggleMute = () => {
-    if (!playerRef.current) return;
-
-    if (isMuted) {
-      playerRef.current.setVolume(volume / 100);
-    } else {
-      playerRef.current.setVolume(0);
-    }
-    setIsMuted(!isMuted);
+    safeExecutePlayerAction(async () => {
+      if (isMuted) {
+        await playerRef.current.setVolume(volume / 100);
+        console.log("Unmuted to volume:", volume);
+      } else {
+        await playerRef.current.setVolume(0);
+        console.log("Muted");
+      }
+      setIsMuted(!isMuted);
+    });
   };
 
   const setShuffle = () => {
     if (!token || !deviceId) return;
 
     const newShuffleState = !isShuffle;
+
+    // Optimistic UI update
+    setIsShuffle(newShuffleState);
 
     fetch(`https://api.spotify.com/v1/me/player/shuffle?state=${newShuffleState}`, {
       method: "PUT",
@@ -392,9 +565,10 @@ export const SpotifyProvider = ({ children }) => {
     })
     .then((response) => {
       if (!response.ok) {
+        // Revert on error
+        setIsShuffle(!newShuffleState);
         throw new Error(`Failed to set shuffle state: ${response.statusText}`);
       }
-      setIsShuffle(newShuffleState);
       console.log(`Shuffle ${newShuffleState ? "enabled" : "disabled"}`);
     })
     .catch((err) => {
@@ -404,6 +578,9 @@ export const SpotifyProvider = ({ children }) => {
 
   const startPlaylistPlayback = (deviceId) => {
     if (!token || !deviceId) return;
+
+    // Optimistic UI update - show as busy
+    setIsControlBusy(true);
 
     fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
       method: "PUT",
@@ -420,9 +597,11 @@ export const SpotifyProvider = ({ children }) => {
         throw new Error(`Failed to start playlist playback: ${response.statusText}`);
       }
       console.log("Playlist playback started successfully!");
+      // State will be updated via player_state_changed
     })
     .catch((err) => {
       console.error("Error starting playlist playback:", err);
+      setIsControlBusy(false);
     });
   };
 
@@ -493,6 +672,8 @@ export const SpotifyProvider = ({ children }) => {
     volume,
     isMuted,
     isShuffle,
+    isControlBusy,
+    isPlayerHealthy,
 
     // Lyrics
     lyrics,

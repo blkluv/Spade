@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Card, IconButton, Box, Typography } from "@mui/material";
+import { Card, IconButton, Box, Typography, Tooltip } from "@mui/material";
 import {
   PlayArrow,
   Pause,
@@ -8,6 +8,7 @@ import {
   SkipPrevious,
   MusicNote,
   OpenInFull,
+  SyncProblem,
 } from "@mui/icons-material";
 import { useSpotify } from "../../context/SpotifyContext";
 
@@ -70,6 +71,11 @@ const miniPlayerStyles = {
     color: "#fff",
     padding: "5px",
   },
+  disabledButton: {
+    color: "rgba(255, 255, 255, 0.5)",
+    padding: "5px",
+    cursor: "not-allowed",
+  },
   progressBar: {
     width: "100%",
     height: "3px",
@@ -105,14 +111,22 @@ const SpotifyMiniPlayer = () => {
   const location = useLocation();
 
   const {
+    // Authentication & state
+    token,
+    isReady,
+
+    // Player state
     currentTrack,
     isPlaying,
     trackProgress,
     trackDuration,
+    isControlBusy,
+    isPlayerHealthy,
+
+    // Player controls
     togglePlay,
     skipToNext,
     skipToPrevious,
-    token,
   } = useSpotify();
 
   const progressPercentage = (trackProgress / trackDuration) * 100 || 0;
@@ -126,6 +140,9 @@ const SpotifyMiniPlayer = () => {
     return null;
   }
 
+  // Calculate if controls should be disabled
+  const areControlsDisabled = isControlBusy || !isPlayerHealthy;
+
   return (
     <Card sx={miniPlayerStyles.container}>
       {currentTrack ? (
@@ -133,12 +150,16 @@ const SpotifyMiniPlayer = () => {
           <img
             src={currentTrack.album.images[0].url}
             alt={currentTrack.name}
-            style={miniPlayerStyles.albumArt}
+            style={{
+              ...miniPlayerStyles.albumArt,
+              opacity: isPlayerHealthy ? 1 : 0.6,
+              filter: isPlayerHealthy ? "none" : "grayscale(50%)"
+            }}
           />
           <Box sx={miniPlayerStyles.trackInfo}>
-            <Typography sx={miniPlayerStyles.trackName}>
-              {currentTrack.name}
-            </Typography>
+              <Typography sx={miniPlayerStyles.trackName}>
+                {currentTrack.name}
+              </Typography>
             <Typography sx={miniPlayerStyles.artistName}>
               {currentTrack.artists.map((a) => a.name).join(", ")}
             </Typography>
@@ -152,25 +173,61 @@ const SpotifyMiniPlayer = () => {
             </Box>
           </Box>
           <Box sx={miniPlayerStyles.controls}>
-            <IconButton onClick={skipToPrevious} sx={miniPlayerStyles.controlButton} size="small">
-              <SkipPrevious fontSize="small" />
-            </IconButton>
-            <IconButton onClick={togglePlay} sx={miniPlayerStyles.controlButton} size="small">
-              {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
-            </IconButton>
-            <IconButton onClick={skipToNext} sx={miniPlayerStyles.controlButton} size="small">
-              <SkipNext fontSize="small" />
-            </IconButton>
-            <IconButton onClick={handleExpandClick} sx={miniPlayerStyles.expandButton} size="small">
-              <OpenInFull fontSize="small" />
-            </IconButton>
+            <Tooltip title={areControlsDisabled ? "Player reconnecting..." : "Previous"}>
+              <span>
+                <IconButton
+                  onClick={skipToPrevious}
+                  sx={areControlsDisabled ? miniPlayerStyles.disabledButton : miniPlayerStyles.controlButton}
+                  size="small"
+                  disabled={areControlsDisabled}
+                >
+                  <SkipPrevious fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            <Tooltip title={areControlsDisabled ? "Player reconnecting..." : (isPlaying ? "Pause" : "Play")}>
+              <span>
+                <IconButton
+                  onClick={togglePlay}
+                  sx={areControlsDisabled ? miniPlayerStyles.disabledButton : miniPlayerStyles.controlButton}
+                  size="small"
+                  disabled={areControlsDisabled}
+                >
+                  {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            <Tooltip title={areControlsDisabled ? "Player reconnecting..." : "Next"}>
+              <span>
+                <IconButton
+                  onClick={skipToNext}
+                  sx={areControlsDisabled ? miniPlayerStyles.disabledButton : miniPlayerStyles.controlButton}
+                  size="small"
+                  disabled={areControlsDisabled}
+                >
+                  <SkipNext fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            <Tooltip title="Open full player">
+              <IconButton onClick={handleExpandClick} sx={miniPlayerStyles.expandButton} size="small">
+                <OpenInFull fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </>
       ) : (
         <Box sx={miniPlayerStyles.noTrackContainer}>
-          <MusicNote sx={{ color: "rgba(255, 255, 255, 0.5)", marginRight: "8px" }} />
+          {!isPlayerHealthy ? (
+            <SyncProblem sx={{ color: "rgba(255, 255, 255, 0.5)", marginRight: "8px" }} />
+          ) : (
+            <MusicNote sx={{ color: "rgba(255, 255, 255, 0.5)", marginRight: "8px" }} />
+          )}
           <Typography sx={miniPlayerStyles.noTrackText}>
-            No track playing
+            {!isPlayerHealthy ? "Reconnecting..." : "No track playing"}
           </Typography>
           <IconButton onClick={handleExpandClick} sx={miniPlayerStyles.expandButton} size="small">
             <OpenInFull fontSize="small" />

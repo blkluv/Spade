@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import "./SpotifyPlayer.css";
 import {
   BsPauseFill,
@@ -8,13 +8,14 @@ import {
 } from "react-icons/bs";
 import { PiShuffleBold } from "react-icons/pi";
 import { ImVolumeHigh, ImVolumeLow, ImVolumeMedium, ImVolumeMute2 } from "react-icons/im";
+import { MdSyncProblem } from "react-icons/md";
 import SpotifyLyrics from './SpotifyLyrics';
 
 // Import our Spotify context hook
 import { useSpotify } from "../../../context/SpotifyContext";
 
 const SpotifyPlayer = ({ useLyrics = true }) => {
-  // Use the context instead of props and local state
+  // Use the context including control state
   const {
     // Player state
     currentTrack,
@@ -24,6 +25,8 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
     volume,
     isMuted,
     isShuffle,
+    isControlBusy,
+    isPlayerHealthy,
 
     // Lyrics
     lyrics,
@@ -42,25 +45,183 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
     formatDuration,
   } = useSpotify();
 
+  // Refs for the interactive elements
   const progressBarRef = useRef(null);
+  const volumeBarRef = useRef(null);
 
-  // Handle progress bar click for seeking
-  const handleProgressClick = (e) => {
-    if (!progressBarRef.current || !trackDuration) return;
+  // State for dragging progress
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragProgress, setDragProgress] = useState(null);
+  const [dragText, setDragText] = useState("");
 
-    const rect = progressBarRef.current.getBoundingClientRect();
-    const clickPositionX = e.clientX - rect.left;
-    const progressBarWidth = rect.width;
+  // State for dragging volume
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const [dragVolume, setDragVolume] = useState(null);
+
+  // Calculate progress percentage for the progress bar
+  const progressPercentage = isDragging
+    ? (dragProgress / trackDuration) * 100
+    : (trackProgress / trackDuration) * 100 || 0;
+
+  // Calculate volume percentage
+  const volumePercentage = isDraggingVolume
+    ? dragVolume
+    : (isMuted ? 0 : volume);
+
+  // PROGRESS BAR INTERACTIONS
+
+  // Helper function to calculate position from mouse/touch event for progress bar
+  const getPositionFromEvent = (e, ref, maxValue) => {
+    if (!ref.current || !maxValue) return 0;
+
+    const rect = ref.current.getBoundingClientRect();
+
+    // Get horizontal position (handle both mouse and touch events)
+    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+
+    const clickPositionX = clientX - rect.left;
+    const elementWidth = rect.width;
 
     // Calculate position as a percentage (0-1)
-    const positionRatio = Math.max(0, Math.min(1, clickPositionX / progressBarWidth));
+    const positionRatio = Math.max(0, Math.min(1, clickPositionX / elementWidth));
 
-    // Convert to milliseconds
-    const seekPositionMs = Math.floor(positionRatio * trackDuration);
-
-    // Seek to the position
-    seek(seekPositionMs);
+    // Convert to value based on maxValue
+    return Math.floor(positionRatio * maxValue);
   };
+
+  // Handle mouse/touch down on progress bar
+  const handleDragStart = (e) => {
+    if (isControlBusy || !isPlayerHealthy) return;
+
+    e.preventDefault();
+    const position = getPositionFromEvent(e, progressBarRef, trackDuration);
+    setIsDragging(true);
+    setDragProgress(position);
+    setDragText(formatDuration(position));
+
+    // Add global event listeners for drag and release
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('touchmove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+    document.addEventListener('touchend', handleDragEnd);
+  };
+
+  // Handle mouse/touch move during progress drag
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const position = getPositionFromEvent(e, progressBarRef, trackDuration);
+    setDragProgress(position);
+    setDragText(formatDuration(position));
+  };
+
+  // Handle progress drag end - seek to the position
+  const handleDragEnd = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    // Remove global event listeners
+    document.removeEventListener('mousemove', handleDragMove);
+    document.removeEventListener('touchmove', handleDragMove);
+    document.removeEventListener('mouseup', handleDragEnd);
+    document.removeEventListener('touchend', handleDragEnd);
+
+    // Seek to the drag position
+    seek(dragProgress);
+
+    // Reset drag state
+    setIsDragging(false);
+    setDragProgress(null);
+  };
+
+  // Handle click on progress bar (for direct jumps)
+  const handleProgressClick = (e) => {
+    if (!progressBarRef.current || !trackDuration || isControlBusy || !isPlayerHealthy) return;
+
+    // Only treat it as a click if we're not already dragging
+    if (!isDragging) {
+      const position = getPositionFromEvent(e, progressBarRef, trackDuration);
+      seek(position);
+    }
+  };
+
+  // VOLUME SLIDER INTERACTIONS
+
+  // Handle mouse/touch down on volume slider
+  const handleVolumeDragStart = (e) => {
+    if (isControlBusy || !isPlayerHealthy) return;
+
+    e.preventDefault();
+    const newVolume = getPositionFromEvent(e, volumeBarRef, 100);
+    setIsDraggingVolume(true);
+    setDragVolume(newVolume);
+
+    // Add global event listeners for drag and release
+    document.addEventListener('mousemove', handleVolumeDragMove);
+    document.addEventListener('touchmove', handleVolumeDragMove);
+    document.addEventListener('mouseup', handleVolumeDragEnd);
+    document.addEventListener('touchend', handleVolumeDragEnd);
+  };
+
+  // Handle mouse/touch move during volume drag
+  const handleVolumeDragMove = (e) => {
+    if (!isDraggingVolume) return;
+    e.preventDefault();
+
+    const newVolume = getPositionFromEvent(e, volumeBarRef, 100);
+    setDragVolume(newVolume);
+  };
+
+  // Handle volume drag end - set the volume
+  const handleVolumeDragEnd = (e) => {
+    if (!isDraggingVolume) return;
+    e.preventDefault();
+
+    // Remove global event listeners
+    document.removeEventListener('mousemove', handleVolumeDragMove);
+    document.removeEventListener('touchmove', handleVolumeDragMove);
+    document.removeEventListener('mouseup', handleVolumeDragEnd);
+    document.removeEventListener('touchend', handleVolumeDragEnd);
+
+    // Set the volume
+    setVolume(dragVolume);
+
+    // Reset drag state
+    setIsDraggingVolume(false);
+    setDragVolume(null);
+  };
+
+  // Handle click on volume bar (for direct volume change)
+  const handleVolumeClick = (e) => {
+    if (!volumeBarRef.current || isControlBusy || !isPlayerHealthy) return;
+
+    // Only treat it as a click if we're not already dragging
+    if (!isDraggingVolume) {
+      const newVolume = getPositionFromEvent(e, volumeBarRef, 100);
+      setVolume(newVolume);
+    }
+  };
+
+  // Clean up event listeners when component unmounts
+  useEffect(() => {
+    // Clean up function
+    const cleanupListeners = () => {
+      // Progress bar listeners
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('touchmove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
+      document.removeEventListener('touchend', handleDragEnd);
+
+      // Volume slider listeners
+      document.removeEventListener('mousemove', handleVolumeDragMove);
+      document.removeEventListener('touchmove', handleVolumeDragMove);
+      document.removeEventListener('mouseup', handleVolumeDragEnd);
+      document.removeEventListener('touchend', handleVolumeDragEnd);
+    };
+
+    return cleanupListeners;
+  }, [isDragging, isDraggingVolume]);
 
   // Helper function to get appropriate volume icon based on volume level
   const getVolumeIcon = (volume, isMuted) => {
@@ -69,9 +230,6 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
     if (volume <= 66) return <ImVolumeMedium size="25px" />;
     return <ImVolumeHigh size="25px" />;
   };
-
-  // Calculate progress percentage for the progress bar
-  const progressPercentage = (trackProgress / trackDuration) * 100 || 0;
 
   return (
     <div className="spotify-player-container">
@@ -83,6 +241,7 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
               src={currentTrack.album.images[0].url}
               alt={currentTrack.name}
               className="track-image"
+              style={isPlayerHealthy ? {} : { opacity: 0.5, filter: "grayscale(50%)" }}
             />
           ) : (
             <img
@@ -100,59 +259,127 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
                 <p className="track-artist">
                   {currentTrack.artists.map((a) => a.name).join(", ")}
                 </p>
+                {!isPlayerHealthy && (
+                  <div className="player-status warning">
+                    <MdSyncProblem size="14px" />
+                    <span>Reconnecting to Spotify...</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div></div>
             )}
             <p className="track-duration">
-              {formatDuration(trackProgress)} / {formatDuration(trackDuration)}
+              {isDragging ? dragText : formatDuration(trackProgress)} / {formatDuration(trackDuration)}
             </p>
             <div
-              className="progress-bar-container"
+              className={`progress-bar-container ${isDragging ? 'seeking' : ''}`}
               ref={progressBarRef}
               onClick={handleProgressClick}
-              style={{ cursor: 'pointer' }}
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+              style={{
+                cursor: isControlBusy || !isPlayerHealthy ? 'not-allowed' : 'pointer',
+                position: 'relative'
+              }}
             >
               <div
                 className="progress-bar"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
+
+              {/* Dragging tooltip */}
+              {isDragging && (
+                <div
+                  className="progress-tooltip"
+                  style={{
+                    left: `${progressPercentage}%`,
+                    opacity: 1
+                  }}
+                >
+                  {dragText}
+                </div>
+              )}
+
+              {/* Dragging handle */}
+              {isDragging && (
+                <div
+                  className="progress-handle"
+                  style={{ left: `${progressPercentage}%` }}
+                ></div>
+              )}
             </div>
             <div className="button-container">
-              <button className="play-pause-button" onClick={skipToPrevious}>
+              <button
+                className={`play-pause-button ${isControlBusy || !isPlayerHealthy ? 'disabled-control' : ''}`}
+                onClick={skipToPrevious}
+                disabled={isControlBusy || !isPlayerHealthy}
+              >
                 <BsSkipBackwardFill size="25px" color="inherit" />
               </button>
-              <button className="play-pause-button" onClick={togglePlay}>
+              <button
+                className={`play-pause-button ${isControlBusy || !isPlayerHealthy ? 'disabled-control' : ''}`}
+                onClick={togglePlay}
+                disabled={isControlBusy || !isPlayerHealthy}
+              >
                 {isPlaying ? (
                   <BsPauseFill size="25px" color="inherit" />
                 ) : (
                   <BsPlayFill size="25px" color="inherit" />
                 )}
               </button>
-              <button className="play-pause-button" onClick={skipToNext}>
+              <button
+                className={`play-pause-button ${isControlBusy || !isPlayerHealthy ? 'disabled-control' : ''}`}
+                onClick={skipToNext}
+                disabled={isControlBusy || !isPlayerHealthy}
+              >
                 <BsSkipForwardFill size="25px" color="inherit" />
               </button>
               <button
-                className={`play-pause-button ${isShuffle ? "is-shuffle-active" : ""}`}
+                className={`play-pause-button ${isShuffle ? "is-shuffle-active" : ""} ${isControlBusy || !isPlayerHealthy ? 'disabled-control' : ''}`}
                 onClick={setShuffle}
+                disabled={isControlBusy || !isPlayerHealthy}
               >
                 <PiShuffleBold size="25px" color="inherit" />
               </button>
             </div>
             {/* Volume Controls */}
             <div className="volume-container">
-              <button className="volume-button" onClick={toggleMute}>
-                {getVolumeIcon(volume, isMuted)}
+              <button
+                className={`volume-button ${isControlBusy || !isPlayerHealthy ? 'disabled-control' : ''}`}
+                onClick={toggleMute}
+                disabled={isControlBusy || !isPlayerHealthy}
+              >
+                {getVolumeIcon(isDraggingVolume ? dragVolume : volume, isMuted && !isDraggingVolume)}
               </button>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={isMuted ? 0 : volume}
-                onChange={(e) => setVolume(parseInt(e.target.value))}
-                className="volume-slider"
-                style={{ '--fill-level': `${isMuted ? 0 : volume}%` }}
-              />
+
+              {/* Custom draggable volume control */}
+              <div
+                className={`custom-volume-slider ${isDraggingVolume ? 'dragging' : ''}`}
+                ref={volumeBarRef}
+                onClick={handleVolumeClick}
+                onMouseDown={handleVolumeDragStart}
+                onTouchStart={handleVolumeDragStart}
+                style={{
+                  opacity: isControlBusy || !isPlayerHealthy ? 0.5 : 1,
+                  cursor: isControlBusy || !isPlayerHealthy ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <div
+                  className="volume-slider-track"
+                >
+                  <div
+                    className="volume-slider-fill"
+                    style={{ width: `${volumePercentage}%` }}
+                  ></div>
+
+                  {/* Volume handle */}
+                  <div
+                    className={`volume-slider-handle ${isDraggingVolume ? 'active' : ''}`}
+                    style={{ left: `${volumePercentage}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
