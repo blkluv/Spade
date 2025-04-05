@@ -1,6 +1,6 @@
 // client/src/context/SpotifyContext.js
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import SpotifyApiService from '../services/SpotifyApiService';
+import SpotifyApiService from '../layouts/spotify/SpotifyApiService';
 
 // Create context
 const SpotifyContext = createContext();
@@ -34,6 +34,7 @@ export const SpotifyProvider = ({ children }) => {
   const playerRef = useRef(null);
   const playerCheckIntervalRef = useRef(null);
   const progressIntervalRef = useRef(null);
+  const lastTrackIdRef = useRef(null);
 
   // Extract token from hash on mount
   useEffect(() => {
@@ -162,6 +163,13 @@ export const SpotifyProvider = ({ children }) => {
 
         // Update track information
         const currentTrackData = state.track_window.current_track;
+
+        // Only fetch lyrics if the track ID has changed
+        if (!lastTrackIdRef.current || currentTrackData.id !== lastTrackIdRef.current) {
+          lastTrackIdRef.current = currentTrackData.id;
+          fetchLyrics(currentTrackData);
+        }
+
         setCurrentTrack(currentTrackData);
         setTrackDuration(state.duration);
 
@@ -171,14 +179,6 @@ export const SpotifyProvider = ({ children }) => {
 
         // Update progress
         setTrackProgress(state.position);
-
-        // If track changed, fetch lyrics
-        const trackChanged = !currentTrack ||
-          currentTrack.id !== currentTrackData.id;
-
-        if (trackChanged) {
-          fetchLyrics(currentTrackData);
-        }
       });
 
       // Connect to the player
@@ -193,7 +193,7 @@ export const SpotifyProvider = ({ children }) => {
             return newProgress > trackDuration ? trackDuration : newProgress;
           });
         }
-      }, 1000);
+      }, 2000);
 
       // Set up a health check interval
       playerCheckIntervalRef.current = setInterval(() => {
@@ -204,7 +204,7 @@ export const SpotifyProvider = ({ children }) => {
             setIsPlayerHealthy(true);
           }
         });
-      }, 5000);
+      }, 1000);
 
       return () => {
         player.disconnect();
@@ -302,10 +302,18 @@ export const SpotifyProvider = ({ children }) => {
     setLoadingLyrics(true);
 
     try {
-      const artist = track.artists[0].name;
+      // Get artist and title from current track
+      const artist = track.artists.map((a) => a.name).join(", ");
       const title = track.name;
 
-      const lyricsData = await SpotifyApiService.getLyrics(artist, title);
+      // Remove everything after "[" in both artist and title
+      const cleanArtist = artist.split("[")[0].trim();
+      const cleanTitle = title.split("[")[0].trim();
+
+      // Format title (in case you still want to remove any " - " split)
+      const formattedTitle = cleanTitle.includes(" - ") ? cleanTitle.split(" - ")[0] : cleanTitle;
+
+      const lyricsData = await SpotifyApiService.getLyrics(cleanArtist, formattedTitle);
 
       if (lyricsData.error) {
         console.error('Lyrics error:', lyricsData.error);
@@ -462,8 +470,7 @@ export const SpotifyProvider = ({ children }) => {
     // Player controls
     togglePlay,
     skipToNext,
-    skipToPrevious,
-    seek,
+    skipToPrevious,seek,
     setVolume: handleSetVolume,
     toggleMute,
     setShuffle,

@@ -40,6 +40,7 @@ class SpotifyApiService {
    */
   static async getLyrics(artist, title) {
     try {
+
       const response = await axios.get(`${API_BASE_URL}/spotify/lyrics`, {
         params: { artist, title }
       });

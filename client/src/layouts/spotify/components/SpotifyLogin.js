@@ -2,7 +2,7 @@
 import React from "react";
 import VuiButton from "../../../components/VuiButton";
 import { FaSpotify } from "react-icons/fa";
-import SpotifyApiService from "../../../services/SpotifyApiService";
+import SpotifyApiService from "../SpotifyApiService";
 
 const SpotifyLogin = () => {
   const loginWithSpotify = () => {
