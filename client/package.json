@@ -31,6 +31,7 @@
 		"ajv": "^8.17.1",
 		"anychart": "^8.13.0",
 		"apexcharts": "^4.0.0",
+		"axios": "^1.8.4",
 		"chroma-js": "2.1.2",
 		"components": "^0.1.0",
 		"fork-ts-checker-webpack-plugin": "^9.0.2",
