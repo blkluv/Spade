@@ -1,32 +1,14 @@
-import React, { useState } from "react";
-import { Card, IconButton, Box } from "@mui/material";
+import React from "react";
+import { Card, Box } from "@mui/material";
 import PropTypes from "prop-types";
 import QRCodeImage from "assets/images/PayPal-QR-Code.png";
 import { FaCcPaypal } from "react-icons/fa6";
-import { FiShare } from "react-icons/fi";
-import { BiRefresh } from "react-icons/bi";
 
 // Vision UI Dashboard React components
 import VuiBox from "components/VuiBox";
 import VuiTypography from "components/VuiTypography";
-import VuiButton from "components/VuiButton";
 
 function ModernPayPalCard({ userName, amount }) {
-  const [copied, setCopied] = useState(false);
-  const [showRefresh, setShowRefresh] = useState(false);
-
-  // Simulate "Copy to clipboard" function
-  const handleCopyClick = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Simulate QR code refresh
-  const handleRefresh = () => {
-    setShowRefresh(true);
-    setTimeout(() => setShowRefresh(false), 1000);
-  };
-
   return (
     <Card
       sx={{
@@ -36,11 +18,6 @@ function ModernPayPalCard({ userName, amount }) {
         borderRadius: "24px",
         boxShadow: "0 20px 40px rgba(0, 53, 128, 0.18), 0 1px 3px rgba(0, 0, 0, 0.1)",
         padding: "30px",
-        transition: "all 0.3s ease",
-        "&:hover": {
-          transform: "translateY(-5px)",
-          boxShadow: "0 24px 48px rgba(0, 53, 128, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1)",
-        },
       }}
     >
       {/* Decorative background elements */}
@@ -69,60 +46,39 @@ function ModernPayPalCard({ userName, amount }) {
         }}
       />
 
-      {/* Content container with proper z-index */}
+      {/* Content container */}
       <VuiBox position="relative" zIndex="1">
-        {/* Header with logo and info */}
-        <VuiBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <VuiBox display="flex" alignItems="center">
-            <VuiBox
-              sx={{
-                backgroundColor: "white",
-                borderRadius: "12px",
-                padding: "10px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
-                mr: 2,
-              }}
-            >
-              <FaCcPaypal size={36} color="#003087" />
-            </VuiBox>
-            <VuiBox>
-              <VuiTypography
-                variant="button"
-                color="white"
-                fontWeight="regular"
-                opacity={0.8}
-                textTransform="uppercase"
-                letterSpacing="1px"
-                fontSize="0.75rem"
-              >
-                PayPal Balance
-              </VuiTypography>
-              <VuiTypography variant="h4" color="white" fontWeight="bold">
-                ${amount}
-              </VuiTypography>
-            </VuiBox>
-          </VuiBox>
-
-          <IconButton
-            onClick={handleRefresh}
+        <VuiBox display="flex" alignItems="center" mb={3}>
+          <VuiBox
             sx={{
-              color: "white",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              backgroundColor: "white",
               borderRadius: "12px",
-              padding: "8px",
-              transition: "all 0.2s ease",
-              animation: showRefresh ? "spin 0.5s ease" : "none",
-              "@keyframes spin": {
-                "0%": { transform: "rotate(0deg)" },
-                "100%": { transform: "rotate(360deg)" }
-              }
+              padding: "10px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
+              mr: 2,
             }}
           >
-            <BiRefresh size={20} />
-          </IconButton>
+            <FaCcPaypal size={36} color="#003087" />
+          </VuiBox>
+          <VuiBox>
+            <VuiTypography
+              variant="button"
+              color="white"
+              fontWeight="regular"
+              opacity={0.8}
+              textTransform="uppercase"
+              letterSpacing="1px"
+              fontSize="0.75rem"
+            >
+              PayPal QR-Code
+            </VuiTypography>
+            <VuiTypography variant="h4" color="white" fontWeight="bold">
+
+            </VuiTypography>
+          </VuiBox>
         </VuiBox>
 
         {/* QR Code Section */}
@@ -159,7 +115,6 @@ function ModernPayPalCard({ userName, amount }) {
               marginBottom: "20px",
             }}
           >
-            {/* QR Code with animation */}
             <Box
               component="img"
               src={QRCodeImage}
@@ -168,18 +123,8 @@ function ModernPayPalCard({ userName, amount }) {
                 width: "180px",
                 height: "180px",
                 display: "block",
-                transition: "all 0.3s ease",
-                filter: showRefresh ? "blur(4px)" : "none",
-                animation: showRefresh ? "pulse 1s ease" : "none",
-                "@keyframes pulse": {
-                  "0%": { opacity: 0.5 },
-                  "50%": { opacity: 0.8 },
-                  "100%": { opacity: 1 }
-                }
               }}
             />
-
-            {/* PayPal branded corner */}
             <Box
               sx={{
                 position: "absolute",
@@ -202,56 +147,8 @@ function ModernPayPalCard({ userName, amount }) {
             variant="button"
             color="text"
             fontWeight="medium"
-            mb={3}
           >
-            Scan to pay instantly
-          </VuiTypography>
-
-          {/* Action buttons */}
-          <VuiBox display="flex" gap={2} width="100%" justifyContent="center">
-            <VuiButton
-              variant="outlined"
-              color="dark"
-              size="small"
-              onClick={handleCopyClick}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                transition: "all 0.2s ease",
-                borderColor: "rgba(0, 0, 0, 0.2)",
-                "&:hover": {
-                  borderColor: "rgba(0, 0, 0, 0.5)",
-                }
-              }}
-            >
-              <FiShare size={16} />
-              {copied ? "Copied!" : "Share Link"}
-            </VuiButton>
-
-            <VuiButton
-              variant="contained"
-              color="info"
-              size="small"
-              sx={{
-                background: "linear-gradient(90deg, #0070ba, #1546a0)",
-                boxShadow: "0 6px 12px rgba(0, 53, 128, 0.2)",
-              }}
-            >
-              View Details
-            </VuiButton>
-          </VuiBox>
-        </VuiBox>
-
-        {/* Expiration notice */}
-        <VuiBox mt={2} textAlign="center">
-          <VuiTypography
-            variant="caption"
-            color="white"
-            fontWeight="regular"
-            opacity={0.7}
-          >
-            QR code expires in 15 minutes
+            Bank gewinnt immer ♠️💸
           </VuiTypography>
         </VuiBox>
       </VuiBox>
@@ -261,7 +158,7 @@ function ModernPayPalCard({ userName, amount }) {
 
 ModernPayPalCard.defaultProps = {
   userName: "Sebastian Rogg",
-  amount: "2,457.80",
+  amount: "1,000.80",
 };
 
 ModernPayPalCard.propTypes = {

@@ -1,7 +1,7 @@
-// src/services/ChipDistributionService.js
+// client/src/layouts/cheatsheet/components/ChipDistributionService.js
 import axios from 'axios';
 
-const API_BASE_URL = 'https://localhost:8080/api';
+const API_BASE_URL = 'https://localhost:8080/api/cheatsheet';
 
 /**
  * Service for Poker Chip Distribution related API calls
@@ -9,7 +9,7 @@ const API_BASE_URL = 'https://localhost:8080/api';
 class ChipDistributionService {
   /**
    * Calculate optimal chip distribution for maximum players
-   * @param {Object} chipInventory - The current inventory of chips (counts of each denomination)
+   * @param {Object} chipInventory - The current inventory of chips and target value
    * @returns {Promise<Object>} The response with optimal distribution data
    */
   static async calculateOptimalDistribution(chipInventory) {

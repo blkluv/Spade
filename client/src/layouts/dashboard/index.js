@@ -74,8 +74,6 @@ function Dashboard() {
           <Footer />
         </VuiBox>
       </DashboardLayout>
-
-      {/* No need to include SpotifyMiniPlayer here anymore, it will be added at the app root level */}
     </div>
   );
 }

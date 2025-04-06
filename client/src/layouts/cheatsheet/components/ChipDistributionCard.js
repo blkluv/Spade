@@ -1,3 +1,4 @@
+// client/src/layouts/cheatsheet/components/ChipDistributionCard.js
 import React, { useState } from "react";
 import {
   Card,
@@ -32,12 +33,13 @@ const CHIP_COLORS = {
 function ChipDistributionCard() {
   // State for inventory inputs
   const [chipInventory, setChipInventory] = useState({
-    chip1: 100,
-    chip5: 100,
+    chip1: 0,
+    chip5: 50,
     chip10: 100,
-    chip25: 50,
-    chip100: 30,
-    chip500: 10
+    chip25: 100,
+    chip100: 50,
+    chip500: 0,
+    targetValue: 1000 // Target value field
   });
 
   // State for distribution results
@@ -57,17 +59,32 @@ function ChipDistributionCard() {
 
   // Calculate optimal distribution
   const calculateDistribution = async () => {
-    if (Object.values(chipInventory).every(v => v === 0)) {
+    // Client-side validation
+    if (Object.keys(chipInventory).filter(k => k !== 'targetValue').every(k => chipInventory[k] === 0)) {
       setError("Please enter at least some chips in your inventory");
+      return;
+    }
+
+    if (chipInventory.targetValue <= 0) {
+      setError("Target value must be greater than zero");
       return;
     }
 
     setLoading(true);
     setError("");
     setSuccess("");
+    setDistribution(null); // Clear any previous distribution
 
     try {
       const result = await ChipDistributionService.calculateOptimalDistribution(chipInventory);
+
+      // Check if the result indicates failure
+      if (!result.success) {
+        setError(result.error || "Failed to calculate optimal distribution");
+        return;
+      }
+
+      // Only set distribution and success message if the result was successful
       setDistribution(result);
       setSuccess("Distribution calculated successfully!");
     } catch (error) {
@@ -178,6 +195,38 @@ function ChipDistributionCard() {
               <VuiTypography variant="subtitle1" color="white" fontWeight="medium" mb={2}>
                 Enter your chip inventory:
               </VuiTypography>
+            </Grid>
+
+            {/* Target Value Field */}
+            <Grid item xs={12}>
+              <VuiBox display="flex" alignItems="center" mb={3}>
+                <VuiTypography variant="button" color="white" fontWeight="medium" mr={2}>
+                  Target Value Per Player ($):
+                </VuiTypography>
+                <TextField
+                  type="number"
+                  name="targetValue"
+                  value={chipInventory.targetValue}
+                  onChange={handleInputChange}
+                  variant="outlined"
+                  size="medium"
+                  InputProps={{
+                    sx: {
+                      width: '120px',
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      borderRadius: "8px",
+                      color: "white",
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                      },
+                    }
+                  }}
+                  inputProps={{
+                    min: 1,
+                    style: { textAlign: 'center' }
+                  }}
+                />
+              </VuiBox>
             </Grid>
 
             {/* Chip inputs */}
