@@ -246,5 +246,5 @@ class WebSocketService {
 }
 
 // Singleton instance
-const websocketService = new WebSocketService();
-export default websocketService;
+const webSocketService = new WebSocketService();
+export default webSocketService;

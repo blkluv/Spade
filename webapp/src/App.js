@@ -6,6 +6,7 @@ import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import CalibrationPage from "./pages/CalibrationPage";
 import { GiPokerHand } from "react-icons/gi";
+import WebSocketService from "./services/WebSocketService";
 
 // Socket connection setup
 const socket = io("http://localhost:5001", {
