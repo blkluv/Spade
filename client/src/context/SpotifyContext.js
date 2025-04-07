@@ -316,18 +316,19 @@ export const SpotifyProvider = ({ children }) => {
     setLoadingLyrics(true);
 
     try {
-      // Get artist and title from current track
-      const artist = track.artists.map((a) => a.name).join(", ");
+      const artist = track.artists[0].name;
       const title = track.name;
 
       // Remove everything after "[" in both artist and title
       const cleanArtist = artist.split("[")[0].trim();
       const cleanTitle = title.split("[")[0].trim();
+      const reallyCleanArtist = cleanArtist.split("(")[0].trim();
+      const reallyCleanTitle = cleanTitle.split("(")[0].trim();
 
       // Format title (in case you still want to remove any " - " split)
-      const formattedTitle = cleanTitle.includes(" - ") ? cleanTitle.split(" - ")[0] : cleanTitle;
+      const formattedTitle = reallyCleanTitle.includes(" - ") ? reallyCleanTitle.split(" - ")[0] : reallyCleanTitle;
 
-      const lyricsData = await SpotifyApiService.getLyrics(cleanArtist, formattedTitle);
+      const lyricsData = await SpotifyApiService.getLyrics(reallyCleanArtist, formattedTitle);
 
       if (lyricsData.error) {
         console.error('Lyrics error:', lyricsData.error);
