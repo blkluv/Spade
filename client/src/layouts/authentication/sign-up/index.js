@@ -1,14 +1,9 @@
-/**/
-
 import { useState } from "react";
-
-// react-router-dom components
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 // @mui material components
-import Icon from "@mui/material/Icon";
-import IconButton from "@mui/material/IconButton";
-import Stack from "@mui/material/Stack";
+import { Alert, AlertTitle, Icon, IconButton, Stack } from "@mui/material";
 
 // Icons
 import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa";
@@ -30,22 +25,105 @@ import borders from "../../../assets/theme/base/borders";
 // Authentication layout components
 import CoverLayout from "../components/CoverLayout";
 
-// Images
-import bgSignIn from "../../../assets/images/signUpImage.png";
+// Import auth context
+import { useAuth } from "../../../context/AuthContext";
 
-function SignIn() {
+// Images
+import bgSignUp from "../../../assets/images/signUpImage.png";
+
+function SignUp() {
+  const [formData, setFormData] = useState({
+    username: "", // Changed from name to username to match backend
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const navigate = useNavigate();
+
+  // Get auth context
+  const { register, login } = useAuth();
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError("All fields are required");
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return false;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Attempt registration with the fields expected by the backend
+      await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+
+      // Auto-login after successful registration (using username now)
+      await login({
+        username: formData.username, // Changed from email to username
+        password: formData.password
+      });
+
+      // Navigate to dashboard on success
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <CoverLayout
-      title="Welcome!"
+      title="Join Us!"
       color="white"
-      description="Use these awesome forms to login or create new account in your project for free."
-      image={bgSignIn}
-      premotto="INSPIRED BY THE FUTURE:"
-      motto="THE VISION UI DASHBOARD"
+      description="Create your SPADE account and start tracking your poker stats"
+      image={bgSignUp}
+      premotto="SPADE BOOT"
+      motto="YOUR POKER DASHBOARD"
       cardContent
     >
       <GradientBorder borderRadius={borders.borderRadius.form} minWidth="100%" maxWidth="100%">
@@ -54,6 +132,7 @@ function SignIn() {
           role="form"
           borderRadius="inherit"
           p="45px"
+          onSubmit={handleSubmit}
           sx={({ palette: { secondary } }) => ({
             backgroundColor: secondary.focus,
           })}
@@ -164,10 +243,26 @@ function SignIn() {
           >
             or
           </VuiTypography>
+
+          {error && (
+            <VuiBox mb={2}>
+              <Alert severity="error" sx={{
+                backgroundColor: "rgba(222, 30, 30, 0.3)",
+                color: "white",
+                "& .MuiAlert-icon": {
+                  color: "white"
+                }
+              }}>
+                <AlertTitle>Error</AlertTitle>
+                {error}
+              </Alert>
+            </VuiBox>
+          )}
+
           <VuiBox mb={2}>
             <VuiBox mb={1} ml={0.5}>
               <VuiTypography component="label" variant="button" color="white" fontWeight="medium">
-                Name
+                Username
               </VuiTypography>
             </VuiBox>
             <GradientBorder
@@ -181,7 +276,10 @@ function SignIn() {
               )}
             >
               <VuiInput
-                placeholder="Your full name..."
+                placeholder="Choose a username..."
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
                 sx={({ typography: { size } }) => ({
                   fontSize: size.sm,
                 })}
@@ -207,6 +305,9 @@ function SignIn() {
               <VuiInput
                 type="email"
                 placeholder="Your email..."
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 sx={({ typography: { size } }) => ({
                   fontSize: size.sm,
                 })}
@@ -232,6 +333,37 @@ function SignIn() {
               <VuiInput
                 type="password"
                 placeholder="Your password..."
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                sx={({ typography: { size } }) => ({
+                  fontSize: size.sm,
+                })}
+              />
+            </GradientBorder>
+          </VuiBox>
+          <VuiBox mb={2}>
+            <VuiBox mb={1} ml={0.5}>
+              <VuiTypography component="label" variant="button" color="white" fontWeight="medium">
+                Confirm Password
+              </VuiTypography>
+            </VuiBox>
+            <GradientBorder
+              minWidth="100%"
+              borderRadius={borders.borderRadius.lg}
+              padding="1px"
+              backgroundImage={radialGradient(
+                palette.gradients.borderLight.main,
+                palette.gradients.borderLight.state,
+                palette.gradients.borderLight.angle
+              )}
+            >
+              <VuiInput
+                type="password"
+                placeholder="Confirm your password..."
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
                 sx={({ typography: { size } }) => ({
                   fontSize: size.sm,
                 })}
@@ -247,12 +379,27 @@ function SignIn() {
               onClick={handleSetRememberMe}
               sx={{ cursor: "pointer", userSelect: "none" }}
             >
-              &nbsp;&nbsp;&nbsp;&nbsp;Remember me
+              &nbsp;&nbsp;&nbsp;&nbsp;I agree to the 
+              <VuiTypography
+                component="a"
+                href="#"
+                variant="caption"
+                color="info"
+                fontWeight="medium"
+                sx={{ ml: "5px" }}
+              >
+                Terms and Conditions
+              </VuiTypography>
             </VuiTypography>
           </VuiBox>
           <VuiBox mt={4} mb={1}>
-            <VuiButton color="info" fullWidth>
-              SIGN UP
+            <VuiButton 
+              color="info" 
+              fullWidth
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "CREATING ACCOUNT..." : "SIGN UP"}
             </VuiButton>
           </VuiBox>
           <VuiBox mt={3} textAlign="center">
@@ -275,4 +422,4 @@ function SignIn() {
   );
 }
 
-export default SignIn;
+export default SignUp;

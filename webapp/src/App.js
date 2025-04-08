@@ -6,7 +6,6 @@ import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import CalibrationPage from "./pages/CalibrationPage";
 import { GiPokerHand } from "react-icons/gi";
-import WebSocketService from "./services/WebSocketService";
 
 // Socket connection setup
 const socket = io("http://localhost:5001", {
@@ -15,9 +14,6 @@ const socket = io("http://localhost:5001", {
   reconnectionAttempts: Infinity,
   reconnectionDelay: 10000,
 });
-
-// Initialize WebSocket service for game communication
-WebSocketService.init("ws://localhost:8080/ws/websocket");
 
 /**
  * Main App component

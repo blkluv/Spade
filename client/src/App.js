@@ -17,6 +17,9 @@ import { useVisionUIController, setMiniSidenav, setOpenConfigurator } from "./co
 import { SpotifyProvider } from "./context/SpotifyContext";
 import SpotifyMiniPlayer from "./layouts/spotify/SpotifyMiniPlayer";
 
+// Import AuthProvider for authentication
+import { AuthProvider } from "./context/AuthContext";
+
 export default function App() {
   const [controller, dispatch] = useVisionUIController();
   const { miniSidenav, direction, layout, openConfigurator, sidenavColor } = controller;
@@ -92,16 +95,44 @@ export default function App() {
   );
 
   return (
-    <SpotifyProvider>
-      {direction === "rtl" ? (
-        <CacheProvider value={rtlCache}>
-          <ThemeProvider theme={themeRTL}>
+    <AuthProvider>
+      <SpotifyProvider>
+        {direction === "rtl" ? (
+          <CacheProvider value={rtlCache}>
+            <ThemeProvider theme={themeRTL}>
+              <CssBaseline />
+              {layout === "dashboard" && (
+                <>
+                  <Sidenav
+                    color={sidenavColor}
+                    brand="SPADE"
+                    brandName="SPADE"
+                    routes={routes}
+                    onMouseEnter={handleOnMouseEnter}
+                    onMouseLeave={handleOnMouseLeave}
+                  />
+                  <Configurator />
+                  {configsButton}
+                </>
+              )}
+              {layout === "vr" && <Configurator />}
+              <Routes>
+                {getRoutes(routes)}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+
+              {/* Global Mini Player - visible on all routes */}
+              <SpotifyMiniPlayer />
+            </ThemeProvider>
+          </CacheProvider>
+        ) : (
+          <ThemeProvider theme={theme}>
             <CssBaseline />
             {layout === "dashboard" && (
               <>
                 <Sidenav
                   color={sidenavColor}
-                  brand="SPADE"
+                  brand=""
                   brandName="SPADE"
                   routes={routes}
                   onMouseEnter={handleOnMouseEnter}
@@ -120,34 +151,8 @@ export default function App() {
             {/* Global Mini Player - visible on all routes */}
             <SpotifyMiniPlayer />
           </ThemeProvider>
-        </CacheProvider>
-      ) : (
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          {layout === "dashboard" && (
-            <>
-              <Sidenav
-                color={sidenavColor}
-                brand=""
-                brandName="SPADE"
-                routes={routes}
-                onMouseEnter={handleOnMouseEnter}
-                onMouseLeave={handleOnMouseLeave}
-              />
-              <Configurator />
-              {configsButton}
-            </>
-          )}
-          {layout === "vr" && <Configurator />}
-          <Routes>
-            {getRoutes(routes)}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-
-          {/* Global Mini Player - visible on all routes */}
-          <SpotifyMiniPlayer />
-        </ThemeProvider>
-      )}
-    </SpotifyProvider>
+        )}
+      </SpotifyProvider>
+    </AuthProvider>
   );
 }
