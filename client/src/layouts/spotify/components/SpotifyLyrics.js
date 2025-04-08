@@ -28,7 +28,7 @@ const SpotifyLyrics = ({
     setParsedLyrics(lines);
   }, [lyrics]);
 
-  // Calculate current line based on track progress with intro/outro buffers
+  // Calculate current line based on track progress with weights for line length
   useEffect(() => {
     if (!parsedLyrics.length || !trackDuration || trackDuration <= 0) return;
 
@@ -43,12 +43,28 @@ const SpotifyLyrics = ({
     // Calculate progress percentage based on effective duration
     const progressPercentage = Math.min(1, Math.max(0, adjustedProgress / EFFECTIVE_DURATION));
 
-    const lineIndex = Math.min(
-      parsedLyrics.length - 1,
-      Math.floor(progressPercentage * parsedLyrics.length)
-    );
+    // Calculate weighted distribution based on line length and metadata
+    const lineWeights = parsedLyrics.map(line => {
+      if (line.isMetadata) return 0.3; // Metadata lines get less weight
+      const lengthWeight = Math.min(2, Math.max(0.5, line.text.length / 25));
+      return lengthWeight;
+    });
 
-    setCurrentLineIndex(lineIndex);
+    const totalWeight = lineWeights.reduce((a, b) => a + b, 0);
+
+    // Find the line that corresponds to the current progress using weights
+    let accumulatedWeight = 0;
+    let currentIndex = 0;
+
+    while (
+      currentIndex < parsedLyrics.length - 1 &&
+      accumulatedWeight / totalWeight < progressPercentage
+    ) {
+      accumulatedWeight += lineWeights[currentIndex];
+      currentIndex++;
+    }
+
+    setCurrentLineIndex(currentIndex);
   }, [trackProgress, trackDuration, parsedLyrics]);
 
   // Smooth scrolling to current line with debounce
@@ -138,9 +154,9 @@ const SpotifyLyrics = ({
     );
   }
 
-  // Calculate line progress for the current line (0-100%) with buffers
+  // Calculate line progress for the current line (0-100%) with line length weights
   const lineProgressPercent = (() => {
-    if (!parsedLyrics.length) return 0;
+    if (!parsedLyrics.length || currentLineIndex < 0) return 0;
 
     // Add buffers (3% of total duration for intro, 1% for outro)
     const INTRO_BUFFER = trackDuration * 0.03;
@@ -153,11 +169,29 @@ const SpotifyLyrics = ({
     // Calculate progress percentage based on effective duration
     const progressPercentage = Math.min(1, Math.max(0, adjustedProgress / EFFECTIVE_DURATION));
 
-    // Calculate exact line position and get fractional part for within-line progress
-    const exactLineNumber = progressPercentage * parsedLyrics.length;
-    const fractionalPart = exactLineNumber - Math.floor(exactLineNumber);
+    // Calculate weighted distribution based on line length and metadata
+    const lineWeights = parsedLyrics.map(line => {
+      if (line.isMetadata) return 0.3;
+      const lengthWeight = Math.min(2, Math.max(0.5, line.text.length / 25));
+      return lengthWeight;
+    });
 
-    return fractionalPart * 100;
+    const totalWeight = lineWeights.reduce((a, b) => a + b, 0);
+
+    // Calculate start and end percentages for the current line
+    let startPercent = 0;
+    for (let i = 0; i < currentLineIndex; i++) {
+      startPercent += lineWeights[i] / totalWeight;
+    }
+
+    const endPercent = startPercent + lineWeights[currentLineIndex] / totalWeight;
+
+    // Calculate how far we are through the current line (0-100%)
+    const lineProgressPercent = Math.max(0, Math.min(100,
+      ((progressPercentage - startPercent) / (endPercent - startPercent)) * 100
+    ));
+
+    return lineProgressPercent;
   })();
 
   return (
