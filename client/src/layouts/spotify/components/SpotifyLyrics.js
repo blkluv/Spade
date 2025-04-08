@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './SpotifyLyrics.css';
 
-// Use memo to prevent unnecessary re-renders
-const SpotifyLyrics = memo(({
+const SpotifyLyrics = ({
   lyrics,
   isPlaying,
   trackProgress,
@@ -11,17 +10,9 @@ const SpotifyLyrics = memo(({
   loadingLyrics
 }) => {
   const [parsedLyrics, setParsedLyrics] = useState([]);
-  const [currentZone, setCurrentZone] = useState(-1);
+  const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const lyricsContainerRef = useRef(null);
-  const prevZone = useRef(-1);
-  const ZONE_RADIUS = 3; // Show 3 lines before and after the current line
-  const lastScrollTimeRef = useRef(0);
-  const animationFrameRef = useRef(null);
-
-  // Add buffers (3% of total duration for intro, 1% for outro)
-  const INTRO_BUFFER = trackDuration * 0.03;
-  const OUTRO_BUFFER = trackDuration * 0.01;
-  const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
+  const scrollTimeoutRef = useRef(null);
 
   // Parse lyrics when they change
   useEffect(() => {
@@ -29,134 +20,96 @@ const SpotifyLyrics = memo(({
 
     const lines = lyrics.split(/\n+/)
       .filter(line => line.trim() !== '')
-      .map((line, index, arr) => {
-        const text = line.trim();
-        const isGroupStart = /^\[(Verse|Chorus|Bridge|Pre-Chorus|Outro)/i.test(text);
-        const isGroupEnd = index < arr.length - 1 &&
-          /^\[(Verse|Chorus|Bridge|Pre-Chorus|Outro)/i.test(arr[index + 1].trim());
-
-        return {
-          text,
-          isGroupStart,
-          isGroupEnd,
-          isMetadata: /^\[.*\]$|^[A-Z\s]+:$/.test(text)
-        };
-      });
+      .map((line) => ({
+        text: line.trim(),
+        isMetadata: /^\[.*\]$|^[A-Z\s]+:$/.test(line.trim())
+      }));
 
     setParsedLyrics(lines);
   }, [lyrics]);
 
-  // Calculate current zone based on track progress
+  // Calculate current line based on track progress with intro/outro buffers
   useEffect(() => {
     if (!parsedLyrics.length || !trackDuration || trackDuration <= 0) return;
 
-    // Use requestAnimationFrame for smoother updates
-    const updateCurrentZone = () => {
-      // Adjust progress for buffers
-      const adjustedProgress = Math.max(0, trackProgress - INTRO_BUFFER);
-      const progressPercentage = Math.min(1, Math.max(0, adjustedProgress / EFFECTIVE_DURATION));
+    // Add buffers (3% of total duration for intro, 1% for outro)
+    const INTRO_BUFFER = trackDuration * 0.03;
+    const OUTRO_BUFFER = trackDuration * 0.01;
+    const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
 
-      // Calculate weighted distribution based on line length and metadata
-      const lineWeights = parsedLyrics.map(line => {
-        if (line.isMetadata) return 0.3;
-        const lengthWeight = Math.min(2, Math.max(0.5, line.text.length / 25));
-        return lengthWeight;
-      });
+    // Adjust progress to account for intro buffer
+    const adjustedProgress = Math.max(0, trackProgress - INTRO_BUFFER);
 
-      const totalWeight = lineWeights.reduce((a, b) => a + b, 0);
-      let accumulatedWeight = 0;
-      let currentIndex = 0;
+    // Calculate progress percentage based on effective duration
+    const progressPercentage = Math.min(1, Math.max(0, adjustedProgress / EFFECTIVE_DURATION));
 
-      // Find the line that corresponds to the current progress
-      while (
-        currentIndex < parsedLyrics.length - 1 &&
-        accumulatedWeight / totalWeight < progressPercentage
-      ) {
-        accumulatedWeight += lineWeights[currentIndex];
-        currentIndex++;
-      }
+    const lineIndex = Math.min(
+      parsedLyrics.length - 1,
+      Math.floor(progressPercentage * parsedLyrics.length)
+    );
 
-      setCurrentZone(Math.max(0, Math.min(currentIndex, parsedLyrics.length - 1)));
-    };
+    setCurrentLineIndex(lineIndex);
+  }, [trackProgress, trackDuration, parsedLyrics]);
 
-    // Use requestAnimationFrame for smoother updates
-    if (isPlaying) {
-      const frameLoop = () => {
-        updateCurrentZone();
-        animationFrameRef.current = requestAnimationFrame(frameLoop);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(frameLoop);
-
-      return () => {
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-      };
-    } else {
-      // Still update once when paused
-      updateCurrentZone();
-    }
-  }, [trackProgress, trackDuration, parsedLyrics, isPlaying]);
-
-  // Scroll to current line with debounce
+  // Smooth scrolling to current line with debounce
   useEffect(() => {
-    if (!lyricsContainerRef.current || currentZone === -1) return;
+    if (!lyricsContainerRef.current || currentLineIndex < 0) return;
 
-    const container = lyricsContainerRef.current;
-    const targetLine = container.querySelector(`[data-index="${currentZone}"]`);
+    // Clear any pending scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
 
-    if (targetLine) {
-      // Debounce scrolling to avoid too frequent updates
-      const now = Date.now();
-      if (now - lastScrollTimeRef.current > 100) { // Only scroll every 100ms at most
-        lastScrollTimeRef.current = now;
+    // Delay scrolling slightly for smoother experience
+    scrollTimeoutRef.current = setTimeout(() => {
+      const container = lyricsContainerRef.current;
+      const targetLine = container.querySelector(`[data-index="${currentLineIndex}"]`);
 
+      if (targetLine) {
         const containerHeight = container.clientHeight;
-        const targetPos = targetLine.offsetTop - (containerHeight / 2);
-        const scrollVelocity = Math.min(1, Math.max(0.2, Math.abs(currentZone - prevZone.current) / 5));
+        const targetOffset = targetLine.offsetTop;
+        const targetHeight = targetLine.clientHeight;
+
+        // Center the current line in the container
+        const scrollPosition = targetOffset - (containerHeight / 2) + (targetHeight / 2);
 
         container.scrollTo({
-          top: targetPos,
-          behavior: isPlaying ? 'smooth' : 'auto',
+          top: scrollPosition,
+          behavior: isPlaying ? 'smooth' : 'auto'
         });
-
-        prevZone.current = currentZone;
       }
-    }
-  }, [currentZone, isPlaying]);
+    }, 100);
 
-  // Clear animation frame on unmount
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [currentLineIndex, isPlaying]);
+
+  // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
       }
     };
   }, []);
 
+  // Get CSS class for a line based on its position relative to current line
   const getLineClass = (index) => {
-    const distance = Math.abs(index - currentZone);
+    const distance = Math.abs(index - currentLineIndex);
     let className = 'lyrics-line';
 
-    if (index === currentZone) {
+    if (index === currentLineIndex) {
       className += ' current-line';
-    } else if (distance <= ZONE_RADIUS) {
-      className += ` context-${distance}`;
-      // Add secondary highlight for immediate neighbors
-      if (distance === 1) className += ' secondary-highlight';
-      // Highlight the 2nd and 3rd top and bottom lines with a more subtle class
-      else if (distance === 2) className += ' secondary-highlight-faded';
+    } else if (distance <= 1) {
+      className += ' secondary-highlight';
+    } else if (distance <= 3) {
+      className += ' secondary-highlight-faded';
     }
 
-    if (parsedLyrics[index]?.isGroupStart) className += ' group-start';
-    if (parsedLyrics[index]?.isGroupEnd) className += ' group-end';
-    if (index < currentZone) className += ' passed';
-    if (index > currentZone) {
-      if (index === currentZone + 1) className += ' upcoming-1';
-      else if (index === currentZone + 2) className += ' upcoming-2';
-      else if (index === currentZone + 3) className += ' upcoming-3';
-    }
+    if (index < currentLineIndex) className += ' passed';
     if (parsedLyrics[index]?.isMetadata) className += ' metadata';
 
     return className;
@@ -185,40 +138,27 @@ const SpotifyLyrics = memo(({
     );
   }
 
-  // Calculate progress for the current line
-  const calculateLineProgress = () => {
-    if (currentZone < 0 || currentZone >= parsedLyrics.length - 1) return 0;
+  // Calculate line progress for the current line (0-100%) with buffers
+  const lineProgressPercent = (() => {
+    if (!parsedLyrics.length) return 0;
 
-    // Find the adjusted progress percentage within the current line
+    // Add buffers (3% of total duration for intro, 1% for outro)
+    const INTRO_BUFFER = trackDuration * 0.03;
+    const OUTRO_BUFFER = trackDuration * 0.01;
+    const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
+
+    // Adjust progress to account for intro buffer
     const adjustedProgress = Math.max(0, trackProgress - INTRO_BUFFER);
+
+    // Calculate progress percentage based on effective duration
     const progressPercentage = Math.min(1, Math.max(0, adjustedProgress / EFFECTIVE_DURATION));
 
-    // Calculate the percentage range of the current line
-    const lineWeights = parsedLyrics.map(line => {
-      if (line.isMetadata) return 0.3;
-      const lengthWeight = Math.min(2, Math.max(0.5, line.text.length / 25));
-      return lengthWeight;
-    });
+    // Calculate exact line position and get fractional part for within-line progress
+    const exactLineNumber = progressPercentage * parsedLyrics.length;
+    const fractionalPart = exactLineNumber - Math.floor(exactLineNumber);
 
-    const totalWeight = lineWeights.reduce((a, b) => a + b, 0);
-
-    // Calculate start and end percentages for the current line
-    let startPercent = 0;
-    for (let i = 0; i < currentZone; i++) {
-      startPercent += lineWeights[i] / totalWeight;
-    }
-
-    const endPercent = startPercent + lineWeights[currentZone] / totalWeight;
-
-    // Calculate how far we are through the current line (0-100%)
-    const lineProgressPercent = Math.max(0, Math.min(100,
-      ((progressPercentage - startPercent) / (endPercent - startPercent)) * 100
-    ));
-
-    return lineProgressPercent;
-  };
-
-  const lineProgressPercent = calculateLineProgress();
+    return fractionalPart * 100;
+  })();
 
   return (
     <div className="spotify-lyrics-container">
@@ -230,10 +170,9 @@ const SpotifyLyrics = memo(({
               key={index}
               className={getLineClass(index)}
               data-index={index}
-              data-current={index === currentZone}
             >
               {line.text}
-              {index === currentZone && (
+              {index === currentLineIndex && (
                 <div
                   className="current-line-progress"
                   style={{ width: `${lineProgressPercent}%` }}
@@ -245,6 +184,6 @@ const SpotifyLyrics = memo(({
       </div>
     </div>
   );
-});
+};
 
 export default SpotifyLyrics;
