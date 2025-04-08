@@ -44,6 +44,28 @@ export const lineChartDataDashboard = [
     ]
   },
   {
+    "name": "Nikita",
+    "data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.85
+    ]
+  },
+  {
     "name": "Matthi",
     "data": [
       0,
@@ -110,7 +132,7 @@ export const lineChartDataDashboard = [
     ]
   },
   {
-    "name": "Gast #2",
+    "name": "Jura Jonas",
     "data": [
       0,
       0,
@@ -128,7 +150,7 @@ export const lineChartDataDashboard = [
       10.7,
       10.7,
       10.7,
-      11.55
+      10.7
     ]
   },
   {
@@ -154,7 +176,7 @@ export const lineChartDataDashboard = [
     ]
   },
   {
-    "name": "Gast #1",
+    "name": "Eliah",
     "data": [
       0,
       0,

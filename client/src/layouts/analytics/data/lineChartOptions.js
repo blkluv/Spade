@@ -64,12 +64,20 @@ export const lineChartOptionsDashboard = {
   },
   fill: { type: "solid", opacity: 0 },
   colors: [
-      "#ff8800",
-      "#1ABC9C",
-      "#E74C3C",
-      "#cb208e",
-      "#2ECC71",
-      "#3498DB",
-      "#ffee20",
-      "#8E44AD"],
+      "#00FFFF",    // Cyan - Eliah
+      "#ff8800",    // Orange - Sebastian
+      "#1ABC9C",    // Teal - Paul
+      "#E74C3C",    // Red - Nikita
+      "#cb208e",    // Pink - Matthi
+      "#2ECC71",    // Green - Markus
+      "#3498DB",    // Blue - Luca
+      "#ffee20",    // Yellow - Jura Jonas
+      "#8E44AD",    // Purple - Jonas
+      "#FF00FF",    // Magenta
+      "#32CD32",    // Lime Green
+      "#FF1493",    // Deep Pink
+      "#00CED1",    // Dark Turquoise
+      "#FF4500",    // Orange Red
+      "#4682B4",    // Steel Blue
+      "#9370DB"],   // Medium Purple
 };

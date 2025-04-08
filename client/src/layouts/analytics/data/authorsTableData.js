@@ -17,8 +17,7 @@ import Sebastian from "../../../assets/images/players/Sebastian2.jpeg";
 import Paul from "../../../assets/images/players/Paul.jpeg";
 import Matthi from "../../../assets/images/players/Matthi.jpeg";
 import Eliah from "../../../assets/images/players/Eliah.png";
-import {useState} from "react";
-
+import Nikita from "../../../assets/images/players/Nikita.jpg";
 
 
 function Player({ image, name, username }) {
@@ -107,7 +106,7 @@ export default {
 
   rows: [
     {
-      player: <Player image={Sebastian} name="Sebastian" username="eixfachZabii" />,
+      player: <Player image={Sebastian} name="Sebastian" username="Tung Tung Sahur" />,
       pnl: <PnL value={getLatestPnL("Sebastian")} />,
       status: (
         <VuiBadge
@@ -132,7 +131,7 @@ export default {
       ),
     },
     {
-      player: <Player image={Luca} name="Luca" username="BozzeBot" />,
+      player: <Player image={Luca} name="Luca" username="Ich bin 12" />,
       pnl: <PnL value={getLatestPnL("Luca")} />,
       status: (
         <VuiBadge
@@ -156,8 +155,8 @@ export default {
       ),
     },
     {
-      player: <Player image={JuraJonas} name="Gast #2" username="JURA + RUSSE" />,
-      pnl: <PnL value={getLatestPnL("Gast #2")} />,
+      player: <Player image={JuraJonas} name="Jura Jonas" username="Hallo ich benutze Whats App!" />,
+      pnl: <PnL value={getLatestPnL("Jura Jonas")} />,
       status: (
         <VuiBadge
           variant="standard"
@@ -181,7 +180,7 @@ export default {
       ),
     },
     {
-      player: <Player image={Paul} name="Paul" username="Ospuker" />,
+      player: <Player image={Paul} name="Paul" username="Zitteraal" />,
       pnl: <PnL value={getLatestPnL("Paul")} />,
       status: (
         <VuiBadge
@@ -206,8 +205,8 @@ export default {
       ),
     },
     {
-      player: <Player image={Eliah} name="Gast #1" username="Dr. BWL" />,
-      pnl: <PnL value={getLatestPnL("Gast #1")} />, // Synchronisierter "PnL"-Wert
+      player: <Player image={Eliah} name="Eliah" username="Dr. BWL" />,
+      pnl: <PnL value={getLatestPnL("Eliah")} />,
       status: (
         <VuiBadge
           variant="standard"
@@ -279,7 +278,7 @@ export default {
       ),
     },
     {
-      player: <Player image={Matthi} name="Matthi" username="Unroastbar" />,
+      player: <Player image={Matthi} name="Matthi" username="Der Boss" />,
       pnl: <PnL value={getLatestPnL("Matthi")} />,
       status: (
         <VuiBadge
@@ -297,6 +296,31 @@ export default {
         />
       ),
       daysPlayed: <DaysPlayed value={getDaysPlayed("Matthi")} />,
+      action: (
+        <VuiTypography component="a" href="#" variant="caption" color="text" fontWeight="medium">
+          Edit
+        </VuiTypography>
+      ),
+    },
+    {
+      player: <Player image={Nikita} name="Nikita" username="Mr. Blyat" />,
+      pnl: <PnL value={getLatestPnL("Nikita")} />,
+      status: (
+        <VuiBadge
+          variant="standard"
+          badgeContent="Online"
+          color="success"
+          size="xs"
+          container
+          sx={({ palette: { white, success }, borders: { borderRadius, borderWidth } }) => ({
+            background: success.main,
+            border: `${borderWidth[1]} solid ${success.main}`,
+            borderRadius: borderRadius.md,
+            color: white.main,
+          })}
+        />
+      ),
+      daysPlayed: <DaysPlayed value={getDaysPlayed("Nikita")} />,
       action: (
         <VuiTypography component="a" href="#" variant="caption" color="text" fontWeight="medium">
           Edit
