@@ -33,7 +33,7 @@ const SpotifyLyrics = ({
     if (!parsedLyrics.length || !trackDuration || trackDuration <= 0) return;
 
     // Add buffers (3% of total duration for intro, 1% for outro)
-    const INTRO_BUFFER = trackDuration * 0.03;
+    const INTRO_BUFFER = trackDuration * 0.065;
     const OUTRO_BUFFER = trackDuration * 0.01;
     const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
 
@@ -159,7 +159,7 @@ const SpotifyLyrics = ({
     if (!parsedLyrics.length || currentLineIndex < 0) return 0;
 
     // Add buffers (3% of total duration for intro, 1% for outro)
-    const INTRO_BUFFER = trackDuration * 0.03;
+    const INTRO_BUFFER = trackDuration * 0.065;
     const OUTRO_BUFFER = trackDuration * 0.01;
     const EFFECTIVE_DURATION = Math.max(1, trackDuration - (INTRO_BUFFER + OUTRO_BUFFER));
 
