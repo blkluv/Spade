@@ -1,4 +1,5 @@
 // client/src/components/AuthNavMenu.js
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,9 +9,17 @@ import {
   ListItemIcon,
   ListItemText,
   Avatar,
-  Tooltip
+  Tooltip,
+  Divider
 } from '@mui/material';
-import { Person, Login, Logout, AccountCircle } from '@mui/icons-material';
+import {
+  Person,
+  Logout,
+  AccountCircle,
+  Settings,
+  Dashboard,
+  Analytics
+} from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import VuiBox from './VuiBox';
 import VuiTypography from './VuiTypography';
@@ -50,27 +59,55 @@ function AuthNavMenu() {
     navigate('/profile');
   };
 
+  const handleDashboard = () => {
+    handleClose();
+    navigate('/dashboard');
+  };
+
+  const handleAnalytics = () => {
+    handleClose();
+    navigate('/analytics');
+  };
+
+  // Get user's initials for avatar
+  const getUserInitials = () => {
+    if (!user || !user.username) return 'U';
+    const names = user.username.split(' ');
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <VuiBox>
-      <Tooltip title={isAuthenticated ? 'Account' : 'Login'}>
+      <Tooltip title={isAuthenticated ? user?.username || 'Account' : 'Login'}>
         <IconButton
           onClick={handleClick}
           size="small"
           aria-controls={open ? 'account-menu' : undefined}
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
-          sx={{ color: 'white' }}
+          sx={{
+            color: 'white',
+            ml: 0.5,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+            }
+          }}
         >
           {isAuthenticated ? (
             <Avatar
               sx={{
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 bgcolor: 'primary.main',
-                fontSize: '0.875rem'
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                border: '2px solid rgba(255, 255, 255, 0.2)'
               }}
             >
-              {user?.username?.charAt(0) || 'U'}
+              {getUserInitials()}
             </Avatar>
           ) : (
             <Person />
@@ -84,13 +121,23 @@ function AuthNavMenu() {
         onClose={handleClose}
         PaperProps={{
           sx: {
-            bgcolor: 'background.dark',
-            color: 'darkblue',
+            bgcolor: 'rgba(22, 25, 34, 0.9)',
+            backdropFilter: 'blur(10px)',
+            color: 'white',
             overflow: 'visible',
             filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
             mt: 1.5,
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
             '& .MuiMenuItem-root': {
-              padding: 2
+              padding: 1.5,
+              my: 0.5,
+              borderRadius: '8px',
+              mx: 0.5,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)'
+              }
             }
           },
         }}
@@ -99,6 +146,22 @@ function AuthNavMenu() {
       >
         {isAuthenticated ? (
           <>
+            <VuiBox px={2} pt={1.5} pb={0.5}>
+              <VuiTypography variant="button" color="white" fontWeight="bold">
+                Hello, {user?.username || 'User'}
+              </VuiTypography>
+            </VuiBox>
+            <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+            <MenuItem onClick={handleDashboard}>
+              <ListItemIcon>
+                <Dashboard fontSize="small" sx={{ color: 'white' }} />
+              </ListItemIcon>
+              <ListItemText>
+                <VuiTypography variant="button" color="white">
+                  Dashboard
+                </VuiTypography>
+              </ListItemText>
+            </MenuItem>
             <MenuItem onClick={handleProfile}>
               <ListItemIcon>
                 <AccountCircle fontSize="small" sx={{ color: 'white' }} />
@@ -106,6 +169,16 @@ function AuthNavMenu() {
               <ListItemText>
                 <VuiTypography variant="button" color="white">
                   Profile
+                </VuiTypography>
+              </ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleAnalytics}>
+              <ListItemIcon>
+                <Analytics fontSize="small" sx={{ color: 'white' }} />
+              </ListItemIcon>
+              <ListItemText>
+                <VuiTypography variant="button" color="white">
+                  Analytics
                 </VuiTypography>
               </ListItemText>
             </MenuItem>
@@ -124,7 +197,7 @@ function AuthNavMenu() {
           <>
             <MenuItem onClick={handleLogin}>
               <ListItemIcon>
-                <Login fontSize="small" sx={{ color: 'white' }} />
+                <Person fontSize="small" sx={{ color: 'white' }} />
               </ListItemIcon>
               <ListItemText>
                 <VuiTypography variant="button" color="white">
@@ -134,7 +207,7 @@ function AuthNavMenu() {
             </MenuItem>
             <MenuItem onClick={handleSignUp}>
               <ListItemIcon>
-                <Person fontSize="small" sx={{ color: 'white' }} />
+                <AccountCircle fontSize="small" sx={{ color: 'white' }} />
               </ListItemIcon>
               <ListItemText>
                 <VuiTypography variant="button" color="white">

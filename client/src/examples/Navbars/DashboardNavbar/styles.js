@@ -1,26 +1,33 @@
-/**/
+// client/src/examples/Navbars/DashboardNavbar/styles.js
 
-function navbar(theme, ownerState) {
+export function navbar(theme, ownerState) {
   const { palette, boxShadows, functions, transitions, breakpoints, borders } = theme;
   const { transparentNavbar, absolute, light } = ownerState;
 
-  const { dark, white, text, transparent, gradients, borderCol } = palette;
+  const { dark, white, gradients, transparent, background } = palette;
   const { navbarBoxShadow } = boxShadows;
-  const { linearGradient, pxToRem } = functions;
-  const { borderRadius } = borders;
+  const { rgba, pxToRem, linearGradient } = functions;
+  const { borderRadius, borderWidth } = borders;
 
   return {
     boxShadow: transparentNavbar || absolute ? "none" : navbarBoxShadow,
     backdropFilter: transparentNavbar || absolute ? "none" : `blur(${pxToRem(42)})`,
-    backgroundColor: `${transparent.main} !important`,
-    backgroundImage:
-      transparentNavbar || absolute
-        ? `none`
-        : `${linearGradient(
-            gradients.navbar.main,
-            gradients.navbar.state,
-            gradients.navbar.deg
-          )} !importants`,
+    backgroundColor: transparentNavbar || absolute
+      ? `${transparent.main} !important`
+      : rgba(white.main, 0.8),
+
+    // Add a subtle border
+    border: transparentNavbar || absolute
+      ? `${borderWidth[1]} solid rgba(255, 255, 255, 0.15) !important`
+      : `${borderWidth[1]} solid rgba(255, 255, 255, 0.2) !important`,
+
+    // Add a subtle gradient overlay
+    backgroundImage: transparentNavbar || absolute
+      ? 'none'
+      : `${linearGradient(
+          rgba(gradients.dark.main, 0.05),
+          rgba(gradients.dark.state, 0.05)
+        )}`,
 
     color: () => {
       let color;
@@ -28,27 +35,26 @@ function navbar(theme, ownerState) {
       if (light) {
         color = white.main;
       } else if (transparentNavbar) {
-        color = text.main;
+        color = dark.main;
       } else {
         color = dark.main;
       }
-      color = white.main;
+
       return color;
     },
     top: absolute ? 0 : pxToRem(12),
     minHeight: pxToRem(75),
     display: "grid",
     alignItems: "center",
-
     borderRadius: borderRadius.xl,
-    borderColor:
-      transparentNavbar || absolute
-        ? `${transparent.main} !important`
-        : `${borderCol.navbar} !important`,
     paddingTop: pxToRem(8),
     paddingBottom: pxToRem(8),
     paddingRight: absolute ? pxToRem(8) : 0,
     paddingLeft: absolute ? pxToRem(16) : 0,
+    transition: transitions.create("all", {
+      easing: transitions.easing.easeInOut,
+      duration: transitions.duration.standard,
+    }),
 
     "& > *": {
       transition: transitions.create("all", {
@@ -70,7 +76,7 @@ function navbar(theme, ownerState) {
   };
 }
 
-const navbarContainer = ({ breakpoints }) => ({
+export const navbarContainer = ({ breakpoints }) => ({
   flexDirection: "column",
   alignItems: "flex-start",
   justifyContent: "space-between",
@@ -85,35 +91,11 @@ const navbarContainer = ({ breakpoints }) => ({
   },
 });
 
-const navbarRow = ({ breakpoints, palette: { white } }, { isMini }) => ({
+export const navbarRow = ({ breakpoints }, { isMini }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   width: "100%",
-  "&.MuiBox-root": {
-    "& nav": {
-      "& ol": {
-        "& li": {
-          "&.MuiBreadcrumbs-li": {
-            "& a": {
-              "& span": {
-                color: white.main,
-              },
-            },
-          },
-          "&.MuiBreadcrumbs-li span.MuiTypography-button": {
-            color: white.main,
-          },
-          "&.MuiBreadcrumbs-separator": {
-            color: white.main,
-          },
-        },
-      },
-    },
-  },
-  "& h6": {
-    color: "rgb(255,255,255)",
-  },
 
   [breakpoints.up("md")]: {
     justifyContent: isMini ? "space-between" : "stretch",
@@ -126,34 +108,41 @@ const navbarRow = ({ breakpoints, palette: { white } }, { isMini }) => ({
   },
 });
 
-const navbarIconButton = ({ typography: { size }, breakpoints, palette: { grey, white } }) => ({
+export const navbarIconButton = ({ typography: { size }, transitions, palette }) => ({
   px: 0.75,
+  mx: 0.5,
+  transition: transitions.create("all", {
+    easing: transitions.easing.easeInOut,
+    duration: transitions.duration.standard,
+  }),
+
+  // Add hover effects
+  "&:hover": {
+    backgroundColor: `rgba(255, 255, 255, 0.1)`,
+    transform: "translateY(-2px)",
+  },
 
   "& .material-icons, .material-icons-round": {
     fontSize: `${size.md} !important`,
-    color: white.main,
-  },
-
-  "& .MuiTypography-root": {
-    display: "none",
-    color: white.main,
-
-    [breakpoints.up("sm")]: {
-      display: "inline-block",
-      lineHeight: 1.2,
-      ml: 0.5,
-    },
   },
 });
 
-const navbarMobileMenu = ({ breakpoints, palette: { white } }) => ({
+export const navbarMobileMenu = ({ breakpoints, transitions }) => ({
   display: "inline-block",
   lineHeight: 0,
-  color: white.main,
+  mx: 0.5,
+  transition: transitions.create("all", {
+    easing: transitions.easing.easeInOut,
+    duration: transitions.duration.standard,
+  }),
+
+  // Add hover effects for mobile menu button
+  "&:hover": {
+    backgroundColor: `rgba(255, 255, 255, 0.1)`,
+    transform: "translateY(-2px)",
+  },
 
   [breakpoints.up("xl")]: {
     display: "none",
   },
 });
-
-export { navbar, navbarContainer, navbarRow, navbarIconButton, navbarMobileMenu };

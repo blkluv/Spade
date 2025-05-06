@@ -1,22 +1,47 @@
-// Import your components and dependencies
+// client/src/examples/Navbars/DashboardNavbar/index.js
+
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "react-router-dom";
-import PropTypes from "prop-types";
+import { useLocation } from "react-router-dom";
+
+// @mui material components
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Icon from "@mui/material/Icon";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+
+// Vision UI Dashboard React components
 import VuiBox from "components/VuiBox";
-import VuiTypography from "components/VuiTypography";
 import VuiInput from "components/VuiInput";
+
+// Vision UI Dashboard React example components
 import Breadcrumbs from "examples/Breadcrumbs";
-import { useVisionUIController, setTransparentNavbar } from "context";
-import AuthNavMenu from "components/AuthNavMenu"; // Import the Auth Menu component
+
+// Custom styles for DashboardNavbar
+import {
+  navbar,
+  navbarContainer,
+  navbarRow,
+  navbarIconButton,
+  navbarMobileMenu,
+} from "examples/Navbars/DashboardNavbar/styles";
+
+// Vision UI Dashboard React context
+import {
+  useVisionUIController,
+  setTransparentNavbar,
+  setMiniSidenav,
+  setOpenConfigurator,
+} from "context";
+
+// Import Auth menu component
+import AuthNavMenu from "components/AuthNavMenu";
 
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useVisionUIController();
-  const { miniSidenav, transparentNavbar, fixedNavbar } = controller;
+  const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
   const route = useLocation().pathname.split("/").slice(1);
 
   useEffect(() => {
@@ -28,22 +53,30 @@ function DashboardNavbar({ absolute, light, isMini }) {
     }
 
     // A function that sets the transparent state of the navbar.
-    function handleTransparentNavbar() {
-      setTransparentNavbar(dispatch, (fixedNavbar && window.scrollY === 0) || !fixedNavbar);
+     function handleTransparentNavbar() {
+      // Instead of checking scroll position, keep navbar styling consistent
+      setTransparentNavbar(dispatch, true);
     }
 
-    /**
-     The event listener that's calling the handleTransparentNavbar function when
-     scrolling the window.
-    */
-    window.addEventListener("scroll", handleTransparentNavbar);
+      // The rest of the effect remains the same:
+      window.addEventListener("scroll", handleTransparentNavbar);
+      handleTransparentNavbar();
+      return () => window.removeEventListener("scroll", handleTransparentNavbar);
+    }, [dispatch, fixedNavbar]);
 
-    // Call the handleTransparentNavbar function to set the state with the initial value.
-    handleTransparentNavbar();
+  const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
+  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
 
-    // Remove event listener on cleanup
-    return () => window.removeEventListener("scroll", handleTransparentNavbar);
-  }, [dispatch, fixedNavbar]);
+  // Get current page title from the route
+  const getActiveRoute = (routes) => {
+    let activeRoute = "Dashboard";
+    for (let i = 0; i < routes.length; i++) {
+      if (routes[i] && routes[i].trim() !== "") {
+        activeRoute = routes[i].charAt(0).toUpperCase() + routes[i].slice(1);
+      }
+    }
+    return activeRoute;
+  };
 
   return (
     <AppBar
@@ -53,7 +86,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
     >
       <Toolbar sx={(theme) => navbarContainer(theme)}>
         <VuiBox color="inherit" mb={{ xs: 1, md: 0 }} sx={(theme) => navbarRow(theme, { isMini })}>
-          <Breadcrumbs icon="home" title={route[route.length - 1]} route={route} light={light} />
+          <Breadcrumbs icon="home" title={getActiveRoute(route)} route={route} light={light} />
         </VuiBox>
         {isMini ? null : (
           <VuiBox sx={(theme) => navbarRow(theme, { isMini })}>
@@ -61,32 +94,43 @@ function DashboardNavbar({ absolute, light, isMini }) {
               <VuiInput
                 placeholder="Type here..."
                 icon={{ component: "search", direction: "left" }}
-                sx={({ palette: { white } }) => ({
+                sx={({ palette: { white, inputColors } }) => ({
                   "& .MuiInputBase-root": {
-                    color: white.main,
+                    background: inputColors.backgroundColor,
+                    borderRadius: "xl",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      boxShadow: "0 0 10px rgba(82, 172, 250, 0.3)",
+                    },
                   },
-                  "& .MuiInputBase-input": {
+                  "& input": {
                     color: white.main,
                   },
                 })}
               />
             </VuiBox>
-            <VuiBox color={light ? "white" : "inherit"}>
-              {/* Add the AuthNavMenu component */}
-              <AuthNavMenu />
-
-              <IconButton size="small" color="inherit" sx={{ ml: 1 }}>
-                <Icon>settings</Icon>
+            <VuiBox color={light ? "white" : "inherit"} display="flex" alignItems="center">
+              <IconButton
+                size="small"
+                color="inherit"
+                sx={navbarMobileMenu}
+                onClick={handleMiniSidenav}
+              >
+                <Icon className={light ? "text-white" : "text-dark"}>
+                  {miniSidenav ? "menu_open" : "menu"}
+                </Icon>
               </IconButton>
               <IconButton
                 size="small"
                 color="inherit"
-                sx={{ ml: 1 }}
-                component={Link}
-                to="/notifications"
+                sx={navbarIconButton}
+                onClick={handleConfiguratorOpen}
               >
-                <Icon>notifications</Icon>
+                <Icon>settings</Icon>
               </IconButton>
+
+              {/* User profile menu - replaced the sign-in button */}
+              <AuthNavMenu />
             </VuiBox>
           </VuiBox>
         )}
@@ -94,65 +138,5 @@ function DashboardNavbar({ absolute, light, isMini }) {
     </AppBar>
   );
 }
-
-// Navbar styles
-function navbar(theme, { transparentNavbar, absolute, light }) {
-  return {
-    boxShadow: "none",
-    backdropFilter: transparentNavbar ? "none" : `saturate(200%) blur(30px)`,
-    backgroundColor: transparentNavbar
-      ? "transparent"
-      : theme.functions.rgba(theme.palette.background.default, 0.8),
-
-    color: light ? "white" : "inherit",
-    top: absolute ? 0 : "12px",
-    minHeight: "75px",
-    display: "grid",
-    alignItems: "center",
-    borderRadius: "20px",
-    paddingTop: absolute ? theme.spacing(4) : "",
-    paddingBottom: absolute ? theme.spacing(4) : "",
-    paddingRight: absolute ? theme.spacing(2) : theme.spacing(2),
-    paddingLeft: absolute ? theme.spacing(2) : theme.spacing(2),
-    "& > *": {
-      transition: "all 100ms ease-in-out",
-    },
-  };
-}
-
-function navbarContainer(theme) {
-  return {
-    display: "flex",
-    alignItems: "center",
-    minHeight: "75px",
-    justifyContent: "space-between",
-    p: 0,
-  };
-}
-
-function navbarRow(theme, { isMini }) {
-  return {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    minHeight: "75px",
-    padding: isMini ? theme.spacing(0, 0, 0, 0) : theme.spacing(0, 0, 0, 0),
-  };
-}
-
-// Setting default values for the props of DashboardNavbar
-DashboardNavbar.defaultProps = {
-  absolute: false,
-  light: false,
-  isMini: false,
-};
-
-// Typechecking props for the DashboardNavbar
-DashboardNavbar.propTypes = {
-  absolute: PropTypes.bool,
-  light: PropTypes.bool,
-  isMini: PropTypes.bool,
-};
 
 export default DashboardNavbar;

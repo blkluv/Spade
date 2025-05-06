@@ -102,7 +102,6 @@
     margin-top: 10px;
     overflow: hidden;
     position: relative;
-    justify-content: center;
   }
 
   .progress-bar {
@@ -659,39 +658,4 @@
   .volume-slider-track {
     height: 8px; /* Slightly taller track for easier touch */
   }
-}
-
-.button-container {
-  display: flex;
-  justify-content: center; /* Centers buttons horizontally */
-  margin-top: 10px; /* Maintains spacing from progress bar */
-  flex-wrap: wrap;
-  gap: 10px;
-  width: 100%; /* Ensures container takes full width */
-}
-
-/* Volume Controls */
-.volume-container {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-top: 20px;
-  width: 100%;
-  justify-content: center; /* Changed from 'left' to 'center' */
-  flex-direction: row; /* Ensures horizontal layout */
-}
-
-/* Custom Volume Slider - ensuring it's also properly centered */
-.custom-volume-slider {
-  width: 160px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  position: relative;
-  touch-action: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  margin: 0 auto; /* Added to help with centering if needed */
 }

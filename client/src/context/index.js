@@ -54,7 +54,7 @@ function VisionUIControllerProvider({ children }) {
     miniSidenav: false,
     transparentSidenav: true,
     sidenavColor: "info",
-    transparentNavbar: true,
+    transparentNavbar: true, // Make sure this is set to true
     fixedNavbar: true,
     openConfigurator: false,
     direction: "ltr",

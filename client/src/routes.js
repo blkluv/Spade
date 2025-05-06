@@ -5,7 +5,6 @@ import Billing from "./layouts/billing";
 import Spotify from "./layouts/spotify"
 import Analytics from "./layouts/analytics"
 import Cheatsheet from "./layouts/cheatsheet"
-import HighLight from "./layouts/highlight"
 import Profile from "./layouts/profile"
 
 // Import authentication components
@@ -75,15 +74,6 @@ const routes = [
     route: "/billing",
     icon: <BsCreditCardFill size="15px" color="inherit" />,
     component: Billing,
-    noCollapse: true,
-  },
-  {
-    type: "collapse",
-    name: "Highlights",
-    key: "highlight",
-    route: "/highlight",
-    icon: <FaRocket size="15px" color="inherit" />,
-    component: HighLight,
     noCollapse: true,
   },
   {
