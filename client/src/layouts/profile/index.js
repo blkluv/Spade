@@ -1,5 +1,5 @@
 // client/src/layouts/profile/index.js
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { Card, Grid, Avatar, Typography, Button, Box, Alert } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
 import VuiBox from "../../components/VuiBox";
@@ -14,9 +14,11 @@ import radialGradient from "../../assets/theme/functions/radialGradient";
 import palette from "../../assets/theme/base/colors";
 import borders from "../../assets/theme/base/borders";
 import AuthService from "../../services/AuthService";
+import {useNavigate} from "react-router-dom";
 
 function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = useState({
     username: user?.username || "",
     email: user?.email || "",
@@ -26,6 +28,13 @@ function Profile() {
   });
   const [message, setMessage] = useState({ type: "", text: "" });
   const [loading, setLoading] = useState(false);
+
+  // Redirect to login page if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/authentication/sign-in");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

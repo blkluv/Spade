@@ -6,13 +6,11 @@ import App from "./App";
 // Vision UI Dashboard React Context Provider
 import { VisionUIControllerProvider } from "./context";
 
-
-
 ReactDOM.render(
   <BrowserRouter>
-  <VisionUIControllerProvider>
-    <App />
-  </VisionUIControllerProvider>
-</BrowserRouter>,
+    <VisionUIControllerProvider>
+      <App />
+    </VisionUIControllerProvider>
+  </BrowserRouter>,
   document.getElementById('root')
 );

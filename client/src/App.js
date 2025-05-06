@@ -7,9 +7,7 @@ import VuiBox from "./components/VuiBox";
 import Sidenav from "./examples/Sidenav";
 import Configurator from "./examples/Configurator";
 import theme from "./assets/theme";
-import themeRTL from "./assets/theme/theme-rtl";
 import { CacheProvider } from "@emotion/react";
-import createCache from "@emotion/cache";
 import routes from "./routes";
 import { useVisionUIController, setMiniSidenav, setOpenConfigurator } from "./context";
 
@@ -24,7 +22,7 @@ export default function App() {
   const [controller, dispatch] = useVisionUIController();
   const { miniSidenav, direction, layout, openConfigurator, sidenavColor } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
-  const [rtlCache, setRtlCache] = useState(null);
+  const [rtlCache] = useState(null);
   const { pathname } = useLocation();
 
   // Open sidenav when mouse enter on mini sidenav
@@ -99,7 +97,7 @@ export default function App() {
       <SpotifyProvider>
         {direction === "rtl" ? (
           <CacheProvider value={rtlCache}>
-            <ThemeProvider theme={themeRTL}>
+            <ThemeProvider theme={theme}>
               <CssBaseline />
               {layout === "dashboard" && (
                 <>

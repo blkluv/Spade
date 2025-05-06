@@ -94,6 +94,7 @@ const routes = [
     icon: <Person size="15px" color="inherit" />,
     component: Profile,
     noCollapse: true,
+    requiresAuth: true,
   },
 
   // Authentication routes (public)
