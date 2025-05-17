@@ -58,8 +58,7 @@ function PokerHeatmap() {
         { from: 0.725, to: 0.75, color: "#BF360C" }, // Deep Red
         { from: 0.75, to: 0.775, color: "#9A2A11" }, // Dark Red-Orange
         { from: 0.775, to: 0.8, color: "#8E2409" }, // Dark Red
-        { from: 0.8, to: 0.825, color: "#8B0000" }, // Darker Red
-        { greater: 0.85, color: "#7F0000" }  // Darkest Red
+        { greater: 0.8, to: 0.825, color: "#8B0000" } // Darker Red
             ]);
               chart.colorScale(colorScale);
 

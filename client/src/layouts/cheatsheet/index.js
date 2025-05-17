@@ -8,7 +8,7 @@ import Footer from "../../examples/Footer";
 import ChipDistributionCard from "./components/ChipDistributionCard";
 import PokerHeatmap from "./components/PokerHeatMap";
 
-function Billing() {
+function Cheatsheet() {
 
   return (
     <div
@@ -35,4 +35,4 @@ function Billing() {
   );
 }
 
-export default Billing;
+export default Cheatsheet;

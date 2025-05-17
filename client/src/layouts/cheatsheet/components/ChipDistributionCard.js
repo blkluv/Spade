@@ -7,8 +7,8 @@ import {
   CircularProgress,
   Box,
   IconButton,
-  Slider,
-  Tooltip
+  Slider, // Slider is imported but not used, consider removing if not needed elsewhere
+  Tooltip // Tooltip is already imported, which is great
 } from "@mui/material";
 import VuiBox from "components/VuiBox";
 import VuiTypography from "components/VuiTypography";
@@ -17,6 +17,7 @@ import {
   FaCoins,
   FaCalculator
 } from "react-icons/fa";
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'; // Import the Info icon
 import ChipDistributionService from "./ChipDistributionService";
 
 // Chip colors based on denominations
@@ -29,7 +30,6 @@ const CHIP_COLORS = {
   '500': { bg: '#6A1B9A', border: '#4A148C', color: '#FFEB3B' }       // Creative purple with yellow text
 };
 
-
 function ChipDistributionCard() {
   // State for inventory inputs
   const [chipInventory, setChipInventory] = useState({
@@ -41,7 +41,6 @@ function ChipDistributionCard() {
     chip500: 0,
     targetValue: 1000 // Target value field
   });
-
   // State for distribution results
   const [distribution, setDistribution] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -64,82 +63,92 @@ function ChipDistributionCard() {
       setError("Please enter at least some chips in your inventory");
       return;
     }
-
     if (chipInventory.targetValue <= 0) {
       setError("Target value must be greater than zero");
       return;
     }
-
     setLoading(true);
     setError("");
     setSuccess("");
     setDistribution(null); // Clear any previous distribution
-
     try {
       const result = await ChipDistributionService.calculateOptimalDistribution(chipInventory);
-
-      // Check if the result indicates failure
-      if (!result.success) {
-        setError(result.error || "Failed to calculate optimal distribution");
+      console.log("API Response:", result); // For debugging
+      // Check for an explicit error message in the result
+      if (result && result.error) {
+        setError(result.error);
         return;
       }
-
-      // Only set distribution and success message if the result was successful
+      // If there's no explicit error, we assume it's a success
       setDistribution(result);
       setSuccess("Distribution calculated successfully!");
     } catch (error) {
+      console.error('Error calculating chip distribution:', error);
+      console.error('Full error response:', error.response);
       setError("Failed to calculate distribution. Please try again.");
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   // Chip component for visual display
-  const ChipComponent = ({ denomination, count }) => (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      sx={{
-        position: 'relative'
-      }}
-    >
+  const ChipComponent = ({ denomination, count }) => {
+    const chipValue = denomination.replace('chip', '');
+    const chipStyle = CHIP_COLORS[chipValue] || {}; // Add a fallback in case of unexpected denominations
+    return (
       <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
         sx={{
-          width: '55px',
-          height: '55px',
-          borderRadius: '50%',
-          backgroundColor: CHIP_COLORS[denomination].bg,
-          border: `4px dashed ${CHIP_COLORS[denomination].border}`,
-          color: CHIP_COLORS[denomination].color,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          fontWeight: 'bold',
-          fontSize: '14px',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-          position: 'relative',
-          zIndex: 2,
-          mb: 1
+          position: 'relative'
         }}
       >
-        ${denomination}
+        <Box
+          sx={{
+            width: '55px',
+            height: '55px',
+            borderRadius: '50%',
+            backgroundColor: chipStyle.bg,
+            border: `4px dashed ${chipStyle.border}`,
+            color: chipStyle.color,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            position: 'relative',
+            zIndex: 2,
+            mb: 1
+          }}
+        >
+          ${chipValue}
+        </Box>
+        <VuiTypography
+          variant="h6"
+          fontWeight="bold"
+          color="white"
+        >
+          {count}
+        </VuiTypography>
+        <VuiTypography
+          variant="caption"
+          color="text"
+        >
+          chips
+        </VuiTypography>
       </Box>
-      <VuiTypography
-        variant="h6"
-        fontWeight="bold"
-        color="white"
-      >
-        {count}
-      </VuiTypography>
-      <VuiTypography
-        variant="caption"
-        color="text"
-      >
-        chips
-      </VuiTypography>
-    </Box>
+    );
+  };
+
+  const algorithmInfo = (
+    <React.Fragment>
+      <VuiTypography color="inherit" variant="caption" display="block">Algorithm Details:</VuiTypography>
+      <VuiTypography color="inherit" variant="caption" display="block">- Uses integer linear programming.</VuiTypography>
+      <VuiTypography color="inherit" variant="caption" display="block">- A valid distribution requires each player to receive at least 10 chips.</VuiTypography>
+     <VuiTypography color="inherit" variant="caption" display="block">- For rather obvious reasons the upper limit for Max Players is 50</VuiTypography>
+    </React.Fragment>
   );
 
   return (
@@ -150,8 +159,28 @@ function ChipDistributionCard() {
         borderRadius: "20px",
         overflow: "hidden",
         boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+        position: 'relative', // Needed for absolute positioning of the info icon
       }}
     >
+      {/* Info Icon with Tooltip */}
+      <Tooltip title={algorithmInfo} arrow placement="bottom-end">
+        <IconButton
+          sx={{
+            position: 'absolute',
+            top: 16, // Adjust as needed
+            right: 16, // Adjust as needed
+            color: 'rgba(255, 255, 255, 0.7)',
+            zIndex: 10, // Ensure it's above other elements
+            '&:hover': {
+              color: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+            }
+          }}
+        >
+          <InfoOutlinedIcon />
+        </IconButton>
+      </Tooltip>
+
       {/* Content */}
       <VuiBox p={3}>
         {/* Header */}
@@ -179,7 +208,6 @@ function ChipDistributionCard() {
             </VuiTypography>
           </VuiBox>
         </VuiBox>
-
         {/* Input Form */}
         <VuiBox
           mb={3}
@@ -196,7 +224,6 @@ function ChipDistributionCard() {
                 Enter your chip inventory:
               </VuiTypography>
             </Grid>
-
             {/* Target Value Field */}
             <Grid item xs={12}>
               <VuiBox display="flex" alignItems="center" mb={3}>
@@ -228,7 +255,6 @@ function ChipDistributionCard() {
                 />
               </VuiBox>
             </Grid>
-
             {/* Chip inputs */}
             {[
               { key: "chip1", label: "$1 Chips", value: 1 },
@@ -245,9 +271,9 @@ function ChipDistributionCard() {
                       width: '24px',
                       height: '24px',
                       borderRadius: '50%',
-                      backgroundColor: CHIP_COLORS[chip.value].bg,
-                      border: `2px dashed ${CHIP_COLORS[chip.value].border}`,
-                      color: CHIP_COLORS[chip.value].color,
+                      backgroundColor: CHIP_COLORS[chip.value]?.bg || '#808080', // Added fallback for safety
+                      border: `2px dashed ${CHIP_COLORS[chip.value]?.border || '#505050'}`, // Added fallback for safety
+                      color: CHIP_COLORS[chip.value]?.color || '#FFFFFF', // Added fallback for safety
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
@@ -289,7 +315,6 @@ function ChipDistributionCard() {
                 </VuiBox>
               </Grid>
             ))}
-
             <Grid item xs={12}>
               <VuiButton
                 color="info"
@@ -309,7 +334,6 @@ function ChipDistributionCard() {
             </Grid>
           </Grid>
         </VuiBox>
-
         {/* Status Messages */}
         {error && (
           <VuiBox
@@ -326,7 +350,6 @@ function ChipDistributionCard() {
             </VuiTypography>
           </VuiBox>
         )}
-
         {success && (
           <VuiBox
             p={2}
@@ -342,7 +365,6 @@ function ChipDistributionCard() {
             </VuiTypography>
           </VuiBox>
         )}
-
         {/* Results */}
         {distribution && (
           <VuiBox
@@ -357,9 +379,8 @@ function ChipDistributionCard() {
             <VuiTypography variant="h5" color="white" fontWeight="bold" mb={3}>
               Optimal Distribution
             </VuiTypography>
-
             <Grid container spacing={3} mb={3}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <VuiBox
                   p={2}
                   borderRadius="12px"
@@ -370,15 +391,14 @@ function ChipDistributionCard() {
                   }}
                 >
                   <VuiTypography variant="subtitle2" color="text" fontWeight="regular" mb={1}>
-                    Players
+                    Max Players
                   </VuiTypography>
                   <VuiTypography variant="h3" color="white" fontWeight="bold">
                     {distribution.maxPlayers}
                   </VuiTypography>
                 </VuiBox>
               </Grid>
-
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <VuiBox
                   p={2}
                   borderRadius="12px"
@@ -389,58 +409,18 @@ function ChipDistributionCard() {
                   }}
                 >
                   <VuiTypography variant="subtitle2" color="text" fontWeight="regular" mb={1}>
-                    Value Per Player
+                    Target Value Per Player
                   </VuiTypography>
                   <VuiTypography variant="h3" color="white" fontWeight="bold">
-                    ${distribution.valuePerPlayer}
-                  </VuiTypography>
-                </VuiBox>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={3}>
-                <VuiBox
-                  p={2}
-                  borderRadius="12px"
-                  textAlign="center"
-                  sx={{
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(26, 115, 232, 0.3)",
-                  }}
-                >
-                  <VuiTypography variant="subtitle2" color="text" fontWeight="regular" mb={1}>
-                    Chips Per Player
-                  </VuiTypography>
-                  <VuiTypography variant="h3" color="white" fontWeight="bold">
-                    {distribution.chipsPerPlayer}
-                  </VuiTypography>
-                </VuiBox>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={3}>
-                <VuiBox
-                  p={2}
-                  borderRadius="12px"
-                  textAlign="center"
-                  sx={{
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(26, 115, 232, 0.3)",
-                  }}
-                >
-                  <VuiTypography variant="subtitle2" color="text" fontWeight="regular" mb={1}>
-                    Efficiency
-                  </VuiTypography>
-                  <VuiTypography variant="h3" color="white" fontWeight="bold">
-                    {distribution.efficiency}%
+                    ${distribution.targetValuePerPlayer}
                   </VuiTypography>
                 </VuiBox>
               </Grid>
             </Grid>
-
-            {/* Chips per player visualization */}
+           {/* Chips per player visualization */}
             <VuiTypography variant="subtitle1" color="white" fontWeight="medium" mb={2}>
               Each player receives:
             </VuiTypography>
-
             <VuiBox
               sx={{
                 display: 'flex',
@@ -452,13 +432,19 @@ function ChipDistributionCard() {
                 border: "1px solid rgba(255, 255, 255, 0.1)",
               }}
             >
-              {[1, 5, 10, 25, 100, 500].map(denom => (
-                <ChipComponent
-                  key={denom}
-                  denomination={denom}
-                  count={distribution.playerDistribution[`chip${denom}`] || 0}
-                />
-              ))}
+              {Object.entries(distribution.distribution)
+                .sort(([denomA, _], [denomB, __]) => {
+                  const valueA = parseInt(denomA.replace('chip', ''), 10);
+                  const valueB = parseInt(denomB.replace('chip', ''), 10);
+                  return valueA - valueB;
+                })
+                .map(([denomination, count]) => (
+                  <ChipComponent
+                    key={denomination}
+                    denomination={denomination}
+                    count={count}
+                  />
+                ))}
             </VuiBox>
           </VuiBox>
         )}
@@ -466,5 +452,4 @@ function ChipDistributionCard() {
     </Card>
   );
 }
-
 export default ChipDistributionCard;
