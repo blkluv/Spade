@@ -111,7 +111,7 @@ const GameButtons = ({ isFullscreen }) => {
       sendAction(`raise ${amount}`);
       setShowRaiseControls(false);
     } else {
-      // Otherwise just show the controls with this amount pre-set
+      // Otherwise show the controls with this amount pre-set
       setShowRaiseControls(true);
     }
   };

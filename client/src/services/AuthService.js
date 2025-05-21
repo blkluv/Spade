@@ -3,7 +3,7 @@
  * Service for handling authentication API calls
  */
 class AuthService {
-  static API_BASE_URL = "https://localhost:8080/api";
+  static API_BASE_URL = "/api";
 
   /**
    * Set authentication token

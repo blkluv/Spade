@@ -77,6 +77,10 @@ const routes = [
     noCollapse: true,
   },
   {
+  type: "divider",
+  key: "divider-profile",
+  },
+  {
     type: "collapse",
     name: "Profile",
     key: "profile",

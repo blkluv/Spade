@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://localhost:8080/api/cheatsheet';
+const API_BASE_URL = '/api/cheatsheet';
 
 class ChipDistributionService {
   static async calculateOptimalDistribution(chipInventory) {

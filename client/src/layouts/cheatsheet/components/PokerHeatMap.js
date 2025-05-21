@@ -31,7 +31,7 @@ function PokerHeatmap() {
 
           // Lade Daten und erstelle das Heatmap-Diagramm
           window.anychart.data.loadJsonFile(
-                        "https://localhost:8080/api/cheatsheet/heatmap",
+                        "/api/cheatsheet/heatmap",
             function (data) {
               const chart = window.anychart.heatMap(data);
 

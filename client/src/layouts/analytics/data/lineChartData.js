@@ -21,7 +21,8 @@ export const lineChartDataDashboard = [
       68.85,
       70.7,
       51.85,
-      55.45
+      55.45,
+      59.45
     ]
   },
   {
@@ -46,6 +47,7 @@ export const lineChartDataDashboard = [
       -58.65,
       -58.65,
       -67.1,
+      -64.55,
       -64.55
     ]
   },
@@ -68,6 +70,7 @@ export const lineChartDataDashboard = [
       0,
       0,
       0,
+      0.85,
       0.85,
       0.85,
       0.85,
@@ -96,7 +99,8 @@ export const lineChartDataDashboard = [
       -44.3,
       -44.3,
       -44.3,
-      -46.4
+      -46.4,
+      -38.4
     ]
   },
   {
@@ -121,7 +125,8 @@ export const lineChartDataDashboard = [
       -39,
       -34.9,
       -34.9,
-      -44.9
+      -44.9,
+      -46.2
     ]
   },
   {
@@ -146,7 +151,8 @@ export const lineChartDataDashboard = [
       52.65,
       42.65,
       50.6,
-      56.3
+      56.3,
+      42.2
     ]
   },
   {
@@ -156,6 +162,7 @@ export const lineChartDataDashboard = [
       0,
       0,
       0,
+      10.7,
       10.7,
       10.7,
       10.7,
@@ -196,7 +203,8 @@ export const lineChartDataDashboard = [
       -1.25,
       2.8,
       22.15,
-      22.4
+      22.4,
+      25.8
     ]
   },
   {
@@ -208,6 +216,7 @@ export const lineChartDataDashboard = [
       0,
       0,
       0,
+      10.15,
       10.15,
       10.15,
       10.15,
