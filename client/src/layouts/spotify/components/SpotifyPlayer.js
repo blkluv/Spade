@@ -184,8 +184,21 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
     document.removeEventListener('mouseup', handleVolumeDragEnd);
     document.removeEventListener('touchend', handleVolumeDragEnd);
 
-    // Set the volume
-    setVolume(dragVolume);
+    const newVolume = dragVolume;
+
+    // Set the new volume
+    setVolume(newVolume);
+
+    // Toggle mute based on the new volume
+    if (newVolume === 0) {
+      if (!isMuted) {
+        toggleMute(); // Mute if volume is 0 and not already muted
+      }
+    } else {
+      if (isMuted) {
+        toggleMute(); // Unmute if volume is not 0 and currently muted
+      }
+    }
 
     // Reset drag state
     setIsDraggingVolume(false);
@@ -225,7 +238,7 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
 
   // Helper function to get appropriate volume icon based on volume level
   const getVolumeIcon = (volume, isMuted) => {
-    if (isMuted || volume === 0) return <ImVolumeMute2 size="25px" />;
+    if (isMuted) return <ImVolumeMute2 size="25px" />;
     if (volume <= 33) return <ImVolumeLow size="25px" />;
     if (volume <= 66) return <ImVolumeMedium size="25px" />;
     return <ImVolumeHigh size="25px" />;
@@ -350,7 +363,7 @@ const SpotifyPlayer = ({ useLyrics = true }) => {
                 onClick={toggleMute}
                 disabled={isControlBusy || !isPlayerHealthy}
               >
-                {getVolumeIcon(isDraggingVolume ? dragVolume : volume, isMuted && !isDraggingVolume)}
+                {getVolumeIcon(isDraggingVolume ? dragVolume : volume, isMuted)}
               </button>
 
               {/* Custom draggable volume control */}
